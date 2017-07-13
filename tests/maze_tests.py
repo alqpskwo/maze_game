@@ -1,7 +1,7 @@
 from nose.tools import assert_raises
 from maze_game import maze
 
-def test_init():
+def test_validation():
 	width_min = maze.Maze.WIDTH_MIN
 	width_max = maze.Maze.WIDTH_MAX
 	height_min = maze.Maze.HEIGHT_MIN
@@ -35,3 +35,16 @@ def test_init():
 	assert_raises(ValueError, maze.Maze, width_min, height_min - 20)
 	assert_raises(ValueError, maze.Maze, width_min, height_max + 1)
 	assert_raises(ValueError, maze.Maze, width_min, height_max + 8)
+
+def test_walls():
+	m = maze.Maze(maze.Maze.WIDTH_MAX, maze.Maze.HEIGHT_MAX)
+	assert m.cells[0][0]
+	assert m.cells[0][1]
+	assert m.cells[1][0]
+	assert m.cells[2][2]
+	assert not m.cells[1][1]
+	assert not m.cells[1][3]
+
+def test_generate():
+	m = maze.Maze(5, 5)
+	m.generate()

@@ -1,5 +1,5 @@
 from nose.tools import *
-import maze_game
+import ezam
 
 def setup():
     print("SETUP!")
