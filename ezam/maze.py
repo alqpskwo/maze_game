@@ -95,6 +95,7 @@ class Player(object):
         self.x = x
         self.y = y
         self.maze = maze
+        self.marked_for_removal = False
 
     def move(self, direction):
         if direction == 'up' and self.maze.is_empty(self.x, self.y + 1):
@@ -126,24 +127,14 @@ class Enemy(object):
             self.x, self.y = choice(neighbors)
 
     def collide(self, player):
-        self.marked_for_removal = True
+        player.marked_for_removal = True
 
 
 class CollisionChecker(object):
     def __init__(self, player):
         self.player = player
-        self.game_objects = []
 
-    def add(self, game_object):
-        self.game_objects.append(game_object)
-
-    def remove(self, game_object):
-        self.game_objects.remove(game_object)
-
-    def check(self, game_object):
-        if (self.player.x, self.player.y) == (game_object.x, game_object.y):
-            game_object.collide(self.player)
-
-    def check_all(self):
-        for game_object in self.game_objects:
-            self.check(game_object)
+    def check(self, game_objects):
+        for game_object in game_objects:
+            if (self.player.x, self.player.y) == (game_object.x, game_object.y):
+                game_object.collide(self.player)

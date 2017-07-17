@@ -14,3 +14,17 @@
             rgb: (1, 0, 0)
         Triangle:
             points: (self.x, self.y + 5, self.x - 5, self.y - 5, self.x + 5, self.y - 5)
+
+<GameOverWidget>:
+    new_game_btn: new_game_btn
+    Label:
+        center_x: root.width / 2
+        center_y: root.height / 2 + 20
+        font_size: 40
+        text: "Game Over!"
+    Button:
+        id: new_game_btn
+        center_x: root.width / 2
+        center_y: root.height / 2 - 20
+        font_size: 30
+        text:"New Game"
