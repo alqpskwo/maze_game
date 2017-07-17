@@ -27,6 +27,7 @@ class EzamGame(Widget):
 
         empty_cells = self.maze.get_empty_cells()
         x,y = empty_cells.pop()
+<<<<<<< HEAD
         player = Player(x, y, self.maze)
         self.player_widget = PlayerWidget(player, self)
         self.add_widget(self.player_widget)
@@ -37,6 +38,13 @@ class EzamGame(Widget):
         enemy = Enemy(x, y, self.maze)
         self.enemy_widget = EnemyWidget(enemy, self)
         self.collision_checker.add(enemy)
+=======
+        self.player_widget = PlayerWidget(Player(x, y, self.maze))
+        self.add_widget(self.player_widget)
+
+        x,y = empty_cells.pop()
+        self.enemy_widget = EnemyWidget(Enemy(x, y, self.maze))
+>>>>>>> master
         self.add_widget(self.enemy_widget)
 
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
@@ -49,6 +57,7 @@ class EzamGame(Widget):
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         if keycode[1] in ['up', 'down', 'left', 'right']:
             self.player_widget.move(keycode[1])
+<<<<<<< HEAD
 
     def remove_game_object(self, game_object_widget):
         self.collision_checker.remove(game_object_widget.game_object)
@@ -62,6 +71,11 @@ class EzamGame(Widget):
 
 class PlayerWidget(Widget):
     def __init__(self, player, engine, **kwargs):
+=======
+
+class PlayerWidget(Widget):
+    def __init__(self, player, **kwargs):
+>>>>>>> master
         super(PlayerWidget, self).__init__(**kwargs)
         self.player = player
         self.engine = engine
@@ -79,10 +93,16 @@ class PlayerWidget(Widget):
         self.update_pos()
 
 class EnemyWidget(Widget):
+<<<<<<< HEAD
     def __init__(self, enemy, engine, **kwargs):
         super(EnemyWidget, self).__init__(**kwargs)
         self.game_object = enemy
         self.engine = engine
+=======
+    def __init__(self, enemy, **kwargs):
+        super(EnemyWidget, self).__init__(**kwargs)
+        self.enemy = enemy
+>>>>>>> master
         self.update_pos()
         self.move_event = Clock.schedule_interval(self.move, 0.1)
 
