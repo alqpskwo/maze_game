@@ -1,13 +1,16 @@
 #:kivy 1.0.9
 
-<PlayerView>:
+<PlayerWidget>:
     canvas:
+        Color:
+            rgb: (0, 1, 0)
         Rectangle:
             size: 10, 10
             pos: (self.x - 5, self.y - 5)
 
-<EnemyView>:
+<EnemyWidget>:
     canvas:
-        Ellipse:
-            size: 10, 10
-            pos: (self.x - 5, self.y - 5)
+        Color:
+            rgb: (1, 0, 0)
+        Triangle:
+            points: (self.x, self.y + 5, self.x - 5, self.y - 5, self.x + 5, self.y - 5)

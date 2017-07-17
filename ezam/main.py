@@ -28,7 +28,7 @@ class EzamGame(Widget):
         empty_cells = self.maze.get_empty_cells()
         x,y = empty_cells.pop()
         player = Player(x, y, self.maze)
-        self.player_widget = PlayerWidget(player)
+        self.player_widget = PlayerWidget(player, self)
         self.add_widget(self.player_widget)
 
         self.collision_checker = CollisionChecker(player)
@@ -54,10 +54,17 @@ class EzamGame(Widget):
         self.collision_checker.remove(game_object_widget.game_object)
         self.remove_widget(game_object_widget)
 
+    def check_collision(self, game_object_widget=None):
+        if game_object_widget:
+            self.collision_checker.check(game_object_widget.game_object)
+        else:
+            self.collision_checker.check_all()
+
 class PlayerWidget(Widget):
-    def __init__(self, player, **kwargs):
+    def __init__(self, player, engine, **kwargs):
         super(PlayerWidget, self).__init__(**kwargs)
         self.player = player
+        self.engine = engine
         self.update_pos()
 
     def update_pos(self):
@@ -68,6 +75,7 @@ class PlayerWidget(Widget):
 
     def move(self, direction):
         self.player.move(direction)
+        self.engine.check_collision()
         self.update_pos()
 
 class EnemyWidget(Widget):
@@ -76,10 +84,11 @@ class EnemyWidget(Widget):
         self.game_object = enemy
         self.engine = engine
         self.update_pos()
-        Clock.schedule_interval(self.move, 0.1)
+        self.move_event = Clock.schedule_interval(self.move, 0.1)
 
     def update_pos(self):
         if self.game_object.marked_for_removal:
+            self.move_event.cancel()
             self.engine.remove_game_object(self)
         else:
             animation = Animation(x = 20 * self.game_object.x + 10,
@@ -89,6 +98,7 @@ class EnemyWidget(Widget):
 
     def move(self, dt):
         self.game_object.move()
+        self.engine.check_collision(self)
         self.update_pos()
 
 
