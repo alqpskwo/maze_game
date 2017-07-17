@@ -59,67 +59,91 @@ class Maze(object):
                     regions[room] = region
 
     def __repr__(self):
-    	s = ""
-    	for y in range(0, self.height):
-    		for x in range(0, self.width):
-    			s += '#' if self.cells[x][y] else ' '
-    		s += '\n'
+        s = ""
+        for y in range(0, self.height):
+            for x in range(0, self.width):
+                s += '#' if self.cells[x][y] else ' '
+            s += '\n'
 
-    	return s
+        return s
 
     def get_wall_segments(self):
-    	wall_segments = []
-    	for y in range(0, self.height):
-    		for x in range(0, self.width):
-    			if self.cells[x][y]:
-    				if x + 1 < self.width and self.cells[x + 1][y]:
-    					wall_segments.append((x,y,x+1,y))
-    				if y + 1 < self.height and self.cells[x][y + 1]:
-    					wall_segments.append((x,y,x,y+1))
-    	return wall_segments
+        wall_segments = []
+        for y in range(0, self.height):
+            for x in range(0, self.width):
+                if self.cells[x][y]:
+                    if x + 1 < self.width and self.cells[x + 1][y]:
+                        wall_segments.append((x,y,x+1,y))
+                    if y + 1 < self.height and self.cells[x][y + 1]:
+                        wall_segments.append((x,y,x,y+1))
+        return wall_segments
 
     def get_empty_cells(self):
-    	cells = []
-    	for y in range(0, self.height):
-    		for x in range(0, self.width):
-    			if not self.cells[x][y]:
-    				cells.append((x,y))
-    	shuffle(cells)
-    	return cells
+        cells = []
+        for y in range(0, self.height):
+            for x in range(0, self.width):
+                if not self.cells[x][y]:
+                    cells.append((x,y))
+        shuffle(cells)
+        return cells
 
     def is_empty(self, x, y):
-    		return not self.cells[x][y]
+            return not self.cells[x][y]
 
 class Player(object):
-	def __init__(self, x, y, maze):
-		self.x = x
-		self.y = y
-		self.maze = maze
+    def __init__(self, x, y, maze):
+        self.x = x
+        self.y = y
+        self.maze = maze
 
-	def move(self, direction):
-		if direction == 'up' and self.maze.is_empty(self.x, self.y + 1):
-			self.y += 1
-		elif direction == 'down' and self.maze.is_empty(self.x, self.y - 1):
-			self.y -= 1
-		elif direction == 'right' and self.maze.is_empty(self.x + 1, self.y):
-			self.x += 1
-		elif direction == 'left' and self.maze.is_empty(self.x - 1, self.y):
-			self.x -= 1
+    def move(self, direction):
+        if direction == 'up' and self.maze.is_empty(self.x, self.y + 1):
+            self.y += 1
+        elif direction == 'down' and self.maze.is_empty(self.x, self.y - 1):
+            self.y -= 1
+        elif direction == 'right' and self.maze.is_empty(self.x + 1, self.y):
+            self.x += 1
+        elif direction == 'left' and self.maze.is_empty(self.x - 1, self.y):
+            self.x -= 1
 
 class Enemy(object):
-	def __init__(self, x, y, maze):
-		self.x = x
-		self.y = y
-		self.prev_loc = (x, y)
-		self.maze = maze
+    def __init__(self, x, y, maze):
+        self.x = x
+        self.y = y
+        self.prev_loc = (x, y)
+        self.maze = maze
+        self.marked_for_removal = False
 
-	def move(self):
-		neighbors = [cell for cell in [(self.x - 1, self.y),
-		                      		   (self.x, self.y + 1),
-							           (self.x + 1, self.y),
-							           (self.x, self.y - 1)]
-						if self.maze.is_empty(*cell) and cell != self.prev_loc]
+    def move(self):
+        neighbors = [cell for cell in [(self.x - 1, self.y),
+                                         (self.x, self.y + 1),
+                                       (self.x + 1, self.y),
+                                       (self.x, self.y - 1)]
+                        if self.maze.is_empty(*cell) and cell!=self.prev_loc]
 
-		self.prev_loc = (self.x, self.y)
-		if neighbors:
-			self.x, self.y = choice(neighbors)
+        self.prev_loc = (self.x, self.y)
+        if neighbors:
+            self.x, self.y = choice(neighbors)
+
+    def collide(self, player):
+        self.marked_for_removal = True
+
+
+class CollisionChecker(object):
+    def __init__(self, player):
+        self.player = player
+        self.game_objects = []
+
+    def add(self, game_object):
+        self.game_objects.append(game_object)
+
+    def remove(self, game_object):
+        self.game_objects.remove(game_object)
+
+    def check(self, game_object):
+        if (self.player.x, self.player.y) == (game_object.x, game_object.y):
+            game_object.collide(self.player)
+
+    def check_all(self):
+        for game_object in self.game_objects:
+            self.check(game_object)
