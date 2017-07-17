@@ -27,12 +27,12 @@ class EzamGame(Widget):
 
         empty_cells = self.maze.get_empty_cells()
         x,y = empty_cells.pop()
-        self.player_view = PlayerView(Player(x, y, self.maze))
-        self.add_widget(self.player_view)
+        self.player_widget = PlayerWidget(Player(x, y, self.maze))
+        self.add_widget(self.player_widget)
 
         x,y = empty_cells.pop()
-        self.enemy_view = EnemyView(Enemy(x, y, self.maze))
-        self.add_widget(self.enemy_view)
+        self.enemy_widget = EnemyWidget(Enemy(x, y, self.maze))
+        self.add_widget(self.enemy_widget)
 
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
@@ -43,11 +43,11 @@ class EzamGame(Widget):
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         if keycode[1] in ['up', 'down', 'left', 'right']:
-            self.player_view.move(keycode[1])
+            self.player_widget.move(keycode[1])
 
-class PlayerView(Widget):
+class PlayerWidget(Widget):
     def __init__(self, player, **kwargs):
-        super(PlayerView, self).__init__(**kwargs)
+        super(PlayerWidget, self).__init__(**kwargs)
         self.player = player
         self.update_pos()
 
@@ -61,9 +61,9 @@ class PlayerView(Widget):
         self.player.move(direction)
         self.update_pos()
 
-class EnemyView(Widget):
+class EnemyWidget(Widget):
     def __init__(self, enemy, **kwargs):
-        super(EnemyView, self).__init__(**kwargs)
+        super(EnemyWidget, self).__init__(**kwargs)
         self.enemy = enemy
         self.update_pos()
         Clock.schedule_interval(self.move, 0.1)
