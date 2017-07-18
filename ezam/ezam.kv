@@ -53,6 +53,7 @@
 
 <WelcomeWidget>:
     new_game_btn: new_game_btn
+    settings_btn: settings_btn
     Label:
         center_x: root.width / 2
         top: root.top - 50
@@ -72,7 +73,14 @@
         center_y: root.height / 2
         size: 170, 40
         font_size: 20
-        text:"New Game"
+        text:"Start"
+    Button:
+        id: settings_btn
+        center_x: root.width / 2
+        center_y: root.height / 2 - 60
+        size: 170, 40
+        font_size: 20
+        text:"Settings"
 
 <WinWidget>:
     new_game_btn: new_game_btn
@@ -88,3 +96,21 @@
         size: 170, 40
         font_size: 20
         text:"New Game"
+
+<SettingWidget>:
+    slider: slider
+    val_label: val_label
+    desc_label: desc_label
+    size_hint_y: None
+    height: 40
+    Label:
+        id: desc_label
+        size_hint_x: None
+        width: 200
+    Label:
+        id: val_label
+        size_hint_x: None
+        width: 40
+    Slider:
+        id: slider
+
