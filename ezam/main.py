@@ -1,6 +1,8 @@
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.slider import Slider
 from kivy.uix.button import Button
 from kivy.graphics import Line, Rectangle, Color
 from kivy.core.window import Window
@@ -13,10 +15,12 @@ from maze import Maze, Player, Enemy, Gold, Crystal
 class GameWidget(BoxLayout):
     def __init__(self, **kwargs):
         super(GameWidget, self).__init__(**kwargs)
+        self.settings = {'num_enemies': 3, 'num_gold': 5}
         self.load_welcome_screen()
+        #self.load_settings_screen()
 
     def new_game(self, *args):
-        engine = EngineWidget()
+        engine = EngineWidget(self.settings)
         engine.bind(on_game_over=self.load_game_over_screen)
         engine.bind(on_win=self.load_win_screen)
         self.clear_widgets()
@@ -32,6 +36,7 @@ class GameWidget(BoxLayout):
         self.clear_widgets()
         welcome_widget = WelcomeWidget()
         welcome_widget.new_game_btn.bind(on_release=self.new_game)
+        welcome_widget.settings_btn.bind(on_release=self.load_settings_screen)
         self.add_widget(welcome_widget)
 
     def load_win_screen(self, engine, *args):
@@ -39,6 +44,13 @@ class GameWidget(BoxLayout):
         win_widget = WinWidget()
         win_widget.new_game_btn.bind(on_release=self.new_game)
         self.add_widget(win_widget)
+
+    def load_settings_screen(self, *args):
+        self.clear_widgets()
+        setting_screen_widget = SettingScreenWidget(self.settings)
+        setting_screen_widget.return_btn.bind(on_release=self.load_welcome_screen)
+        self.add_widget(setting_screen_widget)
+        
 
 class GameOverWidget(Widget):
     new_game_btn = ObjectProperty(None)
@@ -49,14 +61,49 @@ class WelcomeWidget(Widget):
 class WinWidget(Widget):
     new_game_btn = ObjectProperty(None)
 
+class SettingScreenWidget(BoxLayout):
+    return_btn = ObjectProperty(None)
+
+    def __init__(self, settings,**kwargs):
+        super(SettingScreenWidget,self).__init__(orientation='vertical',**kwargs)
+        self.add_widget(SettingWidget('num_enemies', 'number of enemies:',
+                                      0, 50, settings['num_enemies'], settings))
+        self.add_widget(SettingWidget('num_gold', 'number of gold coins:',
+                                      0, 50, settings['num_gold'], settings))
+        self.return_btn = Button(text="Done")
+        self.add_widget(self.return_btn)
+
+
+class SettingWidget(BoxLayout):
+    slider = ObjectProperty(None)
+    desc_label = ObjectProperty(None)
+    val_label = ObjectProperty(None)
+
+    def __init__(self, field_name, desc, min_val, max_val, default, settings, **kwargs):
+        super(SettingWidget, self).__init__(orientation='horizontal', **kwargs)
+        self.slider.min = min_val
+        self.slider.max = max_val
+        self.slider.value = default
+        self.settings = settings
+        self.field_name = field_name
+        self.settings[self.field_name] = default
+        self.val_label.text = str(default)
+        self.desc_label.text = desc
+
+        self.slider.bind(value=self.on_val_change)
+
+    def on_val_change(self, *args):
+        self.settings[self.field_name] = int(self.slider.value)
+        self.val_label.text = str(self.settings[self.field_name])
+
 class EngineWidget(Widget):
-    def __init__(self, **kwargs):
+    def __init__(self, settings, **kwargs):
         super(EngineWidget, self).__init__(**kwargs)
         self.register_event_type('on_game_over')
         self.register_event_type('on_win')
         self.cell_width = 20
-        self.num_enemies = 5
-        self.num_gold = 5
+        self.num_enemies = settings['num_enemies']
+        self.num_gold = settings['num_gold']
         self.num_crystals = 5
 
         self.maze = Maze(25, 25)
