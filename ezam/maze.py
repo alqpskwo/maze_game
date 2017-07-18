@@ -97,6 +97,7 @@ class Player(object):
         self.maze = maze
         self.marked_for_removal = False
         self.gold = False
+        self.has_crystal = False
 
     def move(self, direction):
         if direction == 'up' and self.maze.is_empty(self.x, self.y + 1):
@@ -128,7 +129,11 @@ class Enemy(object):
             self.x, self.y = choice(neighbors)
 
     def collide(self, player):
-        player.marked_for_removal = True
+        if player.has_crystal:
+            self.marked_for_removal = True
+            player.has_crystal = False
+        else:
+            player.marked_for_removal = True
 
 class Gold(object):
     def __init__(self, x, y, maze):
@@ -140,4 +145,16 @@ class Gold(object):
     def collide(self, player):
         player.gold += 1
         self.marked_for_removal = True
+
+class Crystal(object):
+    def __init__(self, x, y, maze):
+        self.x = x
+        self.y = y
+        self.maze = maze
+        self.marked_for_removal = False
+
+    def collide(self, player):
+        if not player.has_crystal:
+            player.has_crystal = True
+            self.marked_for_removal = True
 

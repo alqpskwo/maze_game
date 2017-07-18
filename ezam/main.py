@@ -2,12 +2,12 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from kivy.graphics import Line
+from kivy.graphics import Line, Rectangle, Color
 from kivy.core.window import Window
 from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty
-from maze import Maze, Player, Enemy, Gold
+from maze import Maze, Player, Enemy, Gold, Crystal
 
 
 class GameWidget(BoxLayout):
@@ -57,6 +57,7 @@ class EngineWidget(Widget):
         self.cell_width = 20
         self.num_enemies = 5
         self.num_gold = 5
+        self.num_crystals = 5
 
         self.maze = Maze(25, 25)
         self.maze.generate()
@@ -88,6 +89,12 @@ class EngineWidget(Widget):
             self.non_player_object_widgets.append(gold_widget)
             self.add_widget(gold_widget)
 
+        for i in range(0, self.num_crystals):
+            x,y = empty_cells.pop()
+            crystal_widget = CrystalWidget(Crystal(x, y, self.maze))
+            self.non_player_object_widgets.append(crystal_widget)
+            self.add_widget(crystal_widget)
+
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
 
@@ -118,10 +125,12 @@ class EngineWidget(Widget):
 
 
     def on_game_over(self, *args):
+        print("you lose")
         self.update_event.cancel()
 
     def on_win(self, *args):
-        print("win")
+        print("you win")
+        self.update_event.cancel()
 
 
 class PlayerWidget(Widget):
@@ -129,6 +138,9 @@ class PlayerWidget(Widget):
         super(PlayerWidget, self).__init__(**kwargs)
         self.game_object = player
         self.pos = (20*self.game_object.x+10, 20*self.game_object.y+10)
+        self.has_crystal = False
+        
+
 
     def animate(self):
         animation = Animation(x = 20 * self.game_object.x + 10,
@@ -145,6 +157,12 @@ class PlayerWidget(Widget):
             engine.dispatch('on_game_over')
         if self.game_object.gold >= engine.num_gold:
             engine.dispatch('on_win')
+        if self.game_object.has_crystal != self.has_crystal:
+            self.has_crystal = self.game_object.has_crystal
+            color = (1, 0, 1) if self.has_crystal else (0, 1, 0)
+            self.canvas.get_group("color")[0].rgb = color
+            
+
 
 
 class EnemyWidget(Widget):
@@ -179,6 +197,15 @@ class GoldWidget(Widget):
         if self.game_object.marked_for_removal:
             engine.remove_game_object(self)
 
+class CrystalWidget(Widget):
+    def __init__(self, crystal, **kwargs):
+        super(CrystalWidget, self).__init__(**kwargs)
+        self.game_object = crystal
+        self.pos = (20*self.game_object.x+10, 20*self.game_object.y+10)
+
+    def check_state(self, engine):
+        if self.game_object.marked_for_removal:
+            engine.remove_game_object(self)
 
 
 

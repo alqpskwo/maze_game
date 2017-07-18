@@ -3,8 +3,10 @@
 <PlayerWidget>:
     size: 10, 10
     canvas:
+
         Color:
-            rgb: (0, 1, 0)
+            group: 'color'
+            rgb: (0, 1, 0, 1)
         Rectangle:
             size: 10, 10
             pos: (self.x - 5, self.y - 5)
@@ -13,15 +15,23 @@
     size: 10, 10
     canvas:
         Color:
-            rgb: (1, 0, 0)
+            rgb: (1, 0, 0, 1)
         Triangle:
             points: (self.x, self.y + 5, self.x - 5, self.y - 5, self.x + 5, self.y - 5)
+
+<CrystalWidget>:
+    size: 10, 10
+    canvas:
+        Color:
+            rgb: (0, 0, 1, 1)
+        Quad:
+            points: (self.x, self.y + 5, self.x + 5, self.y, self.x, self.y - 5, self.x - 5, self.y)
 
 <GoldWidget>:
     size: 10, 10
     canvas:
         Color:
-            rgb: (1, 1, 0)
+            rgb: (1, 1, 0, 1)
         Ellipse:
             size: 10, 10
             pos: (self.x - 5, self.y - 5)
