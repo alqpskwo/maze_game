@@ -1,6 +1,7 @@
 #:kivy 1.0.9
 
 <PlayerWidget>:
+    size: 10, 10
     canvas:
         Color:
             rgb: (0, 1, 0)
@@ -9,6 +10,7 @@
             pos: (self.x - 5, self.y - 5)
 
 <EnemyWidget>:
+    size: 10, 10
     canvas:
         Color:
             rgb: (1, 0, 0)
@@ -19,12 +21,51 @@
     new_game_btn: new_game_btn
     Label:
         center_x: root.width / 2
-        center_y: root.height / 2 + 20
+        center_y: root.height / 2 + 30
         font_size: 40
         text: "Game Over!"
     Button:
         id: new_game_btn
         center_x: root.width / 2
-        center_y: root.height / 2 - 20
-        font_size: 30
+        center_y: root.height / 2 - 30
+        size: 170, 40
+        font_size: 20
+        text:"New Game"
+
+<WelcomeWidget>:
+    new_game_btn: new_game_btn
+    Label:
+        center_x: root.width / 2
+        top: root.top - 50
+        font_size: 50
+        text: "Ezam!"
+        color: (1, 0, 0, 1)
+        bold: True
+    Label:
+        center_x: root.width / 2
+        top: root.top - 150
+        font_size: 20
+        halign: "center"
+        text: "Use the arrow keys to navigate the maze avoiding\nmonsters and collect all the gold coins to win.\nCollect crystals to gain a power boost allowing\nyou to defeat one monster."
+    Button:
+        id: new_game_btn
+        center_x: root.width / 2
+        center_y: root.height / 2
+        size: 170, 40
+        font_size: 20
+        text:"New Game"
+
+<WinWidget>:
+    new_game_btn: new_game_btn
+    Label:
+        center_x: root.width / 2
+        center_y: root.height / 2 + 30
+        font_size: 40
+        text: "Game Over!"
+    Button:
+        id: new_game_btn
+        center_x: root.width / 2
+        center_y: root.height / 2 - 30
+        size: 170, 40
+        font_size: 20
         text:"New Game"

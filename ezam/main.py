@@ -13,27 +13,48 @@ from maze import Maze, Player, Enemy, CollisionChecker
 class GameWidget(BoxLayout):
     def __init__(self, **kwargs):
         super(GameWidget, self).__init__(**kwargs)
-        self.new_game()
+        self.load_welcome_screen()
 
     def new_game(self, *args):
         engine = EngineWidget()
-        engine.bind(on_game_over=self.on_game_over)
+        engine.bind(on_game_over=self.load_game_over_screen)
+        engine.bind(on_win=self.load_win_screen)
         self.clear_widgets()
         self.add_widget(engine)
 
-    def on_game_over(self, engine, *args):
+    def load_game_over_screen(self, engine, *args):
         self.clear_widgets()
         game_over_widget = GameOverWidget()
         game_over_widget.new_game_btn.bind(on_release=self.new_game)
         self.add_widget(game_over_widget)
 
+    def load_welcome_screen(self, *args):
+        self.clear_widgets()
+        welcome_widget = WelcomeWidget()
+        welcome_widget.new_game_btn.bind(on_release=self.new_game)
+        self.add_widget(welcome_widget)
+
+    def load_win_screen(self, engine, *args):
+        self.clear_widgets()
+        win_widget = WinWidget()
+        win_widget.new_game_btn.bind(on_release=self.new_game)
+        self.add_widget(win_widget)
+
 class GameOverWidget(Widget):
+    new_game_btn = ObjectProperty(None)
+
+class WelcomeWidget(Widget):
+    new_game_btn = ObjectProperty(None)
+
+class WinWidget(Widget):
     new_game_btn = ObjectProperty(None)
 
 class EngineWidget(Widget):
     def __init__(self, **kwargs):
         super(EngineWidget, self).__init__(**kwargs)
         self.register_event_type('on_game_over')
+        self.register_event_type('on_win')
+        self.update_event = Clock.schedule_interval(self.update, 0.1)
         self.cell_width = 20
 
         self.maze = Maze(25, 25)
@@ -49,19 +70,16 @@ class EngineWidget(Widget):
 
         x,y = empty_cells.pop()
         player = Player(x, y, self.maze)
-        self.player_widget = PlayerWidget(player, self)
-        self.player_widget.bind(on_killed = self.on_game_over)
+        self.player_widget = PlayerWidget(player)
         self.add_widget(self.player_widget)
 
-        self.collision_checker = CollisionChecker(player)
-
-        self.non_player_objects =[]
+        self.non_player_object_widgets =[]
 
         for i in range(0, 5):
             x,y = empty_cells.pop()
-            enemy = Enemy(x, y, self.maze)
-            self.non_player_objects.append(enemy)
-            self.add_widget(EnemyWidget(enemy, self))
+            enemy_widget = EnemyWidget(Enemy(x, y, self.maze))
+            self.non_player_object_widgets.append(enemy_widget)
+            self.add_widget(enemy_widget)
 
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
@@ -75,29 +93,35 @@ class EngineWidget(Widget):
             self.player_widget.move(keycode[1])
 
     def remove_game_object(self, game_object_widget):
-        self.non_player_objects.remove(game_object_widget.game_object)
+        self.non_player_object_widgets.remove(game_object_widget)
         self.remove_widget(game_object_widget)
 
-    def check_collision(self, game_object_widget=None):
-        if game_object_widget:
-            self.collision_checker.check([game_object_widget.game_object])
-        else:
-            self.collision_checker.check(self.non_player_objects)
+    def check_collisions(self):
+        for widget in self.non_player_object_widgets:
+            if widget.collide_widget(self.player_widget):
+                widget.game_object.collide(self.player_widget.game_object)
+
+    def update(self, *args):
+        self.check_collisions()
+        self.player_widget.check_state(self)
+        for widget in self.non_player_object_widgets:
+            widget.check_state(self)
+
 
     def on_game_over(self, *args):
-        print("game over")
+        self.update_event.cancel()
+
+    def on_win(self, *args):
+        print("win")
 
 
 class PlayerWidget(Widget):
-    def __init__(self, player, engine, **kwargs):
+    def __init__(self, player, **kwargs):
         super(PlayerWidget, self).__init__(**kwargs)
         self.game_object = player
-        self.engine = engine
         self.update_pos()
 
     def update_pos(self):
-        if self.game_object.marked_for_removal:
-            self.engine.dispatch('on_game_over')
         animation = Animation(x = 20 * self.game_object.x + 10,
                               y = 20 * self.game_object.y + 10,
                               d = 0.05)
@@ -105,34 +129,35 @@ class PlayerWidget(Widget):
 
     def move(self, direction):
         self.game_object.move(direction)
-        self.engine.check_collision()
         self.update_pos()
 
-    def on_killed(self, *args):
-        print("I am dead")
+    def check_state(self, engine):
+        if self.game_object.marked_for_removal:
+            engine.dispatch('on_game_over')
+
 
 class EnemyWidget(Widget):
-    def __init__(self, enemy, engine, **kwargs):
+    def __init__(self, enemy, **kwargs):
         super(EnemyWidget, self).__init__(**kwargs)
         self.game_object = enemy
-        self.engine = engine
         self.update_pos()
         self.move_event = Clock.schedule_interval(self.move, 0.1)
 
     def update_pos(self):
-        if self.game_object.marked_for_removal:
-            self.move_event.cancel()
-            self.engine.remove_game_object(self)
-        else:
-            animation = Animation(x = 20 * self.game_object.x + 10,
-                                  y = 20 * self.game_object.y + 10,
-                                  d = 0.05)
-            animation.start(self)
+        animation = Animation(x = 20 * self.game_object.x + 10,
+                              y = 20 * self.game_object.y + 10,
+                              d = 0.05)
+        animation.start(self)
 
     def move(self, dt):
         self.game_object.move()
-        self.engine.check_collision(self)
         self.update_pos()
+
+    def check_state(self, engine):
+        if self.game_object.marked_for_removal:
+            self.move_event.cancel()
+            engine.remove_game_object(self)
+
 
 
 
