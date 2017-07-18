@@ -96,6 +96,7 @@ class Player(object):
         self.y = y
         self.maze = maze
         self.marked_for_removal = False
+        self.gold = False
 
     def move(self, direction):
         if direction == 'up' and self.maze.is_empty(self.x, self.y + 1):
@@ -129,12 +130,14 @@ class Enemy(object):
     def collide(self, player):
         player.marked_for_removal = True
 
+class Gold(object):
+    def __init__(self, x, y, maze):
+        self.x = x
+        self.y = y
+        self.maze = maze
+        self.marked_for_removal = False
 
-class CollisionChecker(object):
-    def __init__(self, player):
-        self.player = player
+    def collide(self, player):
+        player.gold += 1
+        self.marked_for_removal = True
 
-    def check(self, game_objects):
-        for game_object in game_objects:
-            if (self.player.x, self.player.y) == (game_object.x, game_object.y):
-                game_object.collide(self.player)

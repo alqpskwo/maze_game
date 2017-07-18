@@ -7,7 +7,7 @@ from kivy.core.window import Window
 from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty
-from maze import Maze, Player, Enemy, CollisionChecker
+from maze import Maze, Player, Enemy, Gold
 
 
 class GameWidget(BoxLayout):
@@ -54,8 +54,9 @@ class EngineWidget(Widget):
         super(EngineWidget, self).__init__(**kwargs)
         self.register_event_type('on_game_over')
         self.register_event_type('on_win')
-        self.update_event = Clock.schedule_interval(self.update, 0.1)
         self.cell_width = 20
+        self.num_enemies = 5
+        self.num_gold = 5
 
         self.maze = Maze(25, 25)
         self.maze.generate()
@@ -75,14 +76,22 @@ class EngineWidget(Widget):
 
         self.non_player_object_widgets =[]
 
-        for i in range(0, 5):
+        for i in range(0, self.num_enemies):
             x,y = empty_cells.pop()
             enemy_widget = EnemyWidget(Enemy(x, y, self.maze))
             self.non_player_object_widgets.append(enemy_widget)
             self.add_widget(enemy_widget)
 
+        for i in range(0, self.num_gold):
+            x,y = empty_cells.pop()
+            gold_widget = GoldWidget(Gold(x, y, self.maze))
+            self.non_player_object_widgets.append(gold_widget)
+            self.add_widget(gold_widget)
+
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
+
+        self.update_event = Clock.schedule_interval(self.update, 0.01)
 
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
@@ -119,9 +128,9 @@ class PlayerWidget(Widget):
     def __init__(self, player, **kwargs):
         super(PlayerWidget, self).__init__(**kwargs)
         self.game_object = player
-        self.update_pos()
+        self.pos = (20*self.game_object.x+10, 20*self.game_object.y+10)
 
-    def update_pos(self):
+    def animate(self):
         animation = Animation(x = 20 * self.game_object.x + 10,
                               y = 20 * self.game_object.y + 10,
                               d = 0.05)
@@ -129,33 +138,45 @@ class PlayerWidget(Widget):
 
     def move(self, direction):
         self.game_object.move(direction)
-        self.update_pos()
+        self.animate()
 
     def check_state(self, engine):
         if self.game_object.marked_for_removal:
             engine.dispatch('on_game_over')
+        if self.game_object.gold >= engine.num_gold:
+            engine.dispatch('on_win')
 
 
 class EnemyWidget(Widget):
     def __init__(self, enemy, **kwargs):
         super(EnemyWidget, self).__init__(**kwargs)
         self.game_object = enemy
-        self.update_pos()
-        self.move_event = Clock.schedule_interval(self.move, 0.1)
+        self.pos = (20*self.game_object.x+10, 20*self.game_object.y+10)
+        self.move_event = Clock.schedule_interval(self.move, 0.3)
 
-    def update_pos(self):
+    def animate(self):
         animation = Animation(x = 20 * self.game_object.x + 10,
                               y = 20 * self.game_object.y + 10,
-                              d = 0.05)
+                              d = 0.3)
         animation.start(self)
 
     def move(self, dt):
         self.game_object.move()
-        self.update_pos()
+        self.animate()
 
     def check_state(self, engine):
         if self.game_object.marked_for_removal:
             self.move_event.cancel()
+            engine.remove_game_object(self)
+
+class GoldWidget(Widget):
+    def __init__(self, gold, **kwargs):
+        super(GoldWidget, self).__init__(**kwargs)
+        self.game_object = gold
+        self.pos = (20*self.game_object.x+10, 20*self.game_object.y+10)
+
+    def check_state(self, engine):
+        if self.game_object.marked_for_removal:
             engine.remove_game_object(self)
 
 
