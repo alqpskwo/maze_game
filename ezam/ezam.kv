@@ -37,19 +37,19 @@
             pos: (self.x - 5, self.y - 5)
 
 <GameOverWidget>:
-    new_game_btn: new_game_btn
+    return_btn: return_btn
     Label:
         center_x: root.width / 2
         center_y: root.height / 2 + 30
         font_size: 40
         text: "Game Over!"
     Button:
-        id: new_game_btn
+        id: return_btn
         center_x: root.width / 2
         center_y: root.height / 2 - 30
         size: 170, 40
         font_size: 20
-        text:"New Game"
+        text:"OK"
 
 <WelcomeWidget>:
     new_game_btn: new_game_btn
@@ -83,19 +83,19 @@
         text:"Settings"
 
 <WinWidget>:
-    new_game_btn: new_game_btn
+    return_btn: return_btn
     Label:
         center_x: root.width / 2
         center_y: root.height / 2 + 30
         font_size: 40
         text: "You Win!"
     Button:
-        id: new_game_btn
+        id: return_btn
         center_x: root.width / 2
         center_y: root.height / 2 - 30
         size: 170, 40
         font_size: 20
-        text:"New Game"
+        text:"OK"
 
 <SettingWidget>:
     slider: slider
@@ -107,10 +107,12 @@
         id: desc_label
         size_hint_x: None
         width: 200
+        font_size: 20
     Label:
         id: val_label
         size_hint_x: None
         width: 40
+        font_size: 20
     Slider:
         id: slider
 
