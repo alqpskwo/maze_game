@@ -61,11 +61,14 @@ class GameWidget(BoxLayout):
 class GameOverWidget(Widget):
     return_btn = ObjectProperty(None)
 
+
 class WelcomeWidget(Widget):
     new_game_btn = ObjectProperty(None)
 
+
 class WinWidget(Widget):
     return_btn = ObjectProperty(None)
+
 
 class SettingScreenWidget(BoxLayout):
     return_btn = ObjectProperty(None)
@@ -111,6 +114,7 @@ class SettingWidget(BoxLayout):
         self.settings[self.field_name] = int(self.slider.value)
         self.val_label.text = str(self.settings[self.field_name])
 
+
 class EngineWidget(Widget):
     def __init__(self, settings, **kwargs):
         super(EngineWidget, self).__init__(**kwargs)
@@ -127,9 +131,16 @@ class EngineWidget(Widget):
 
         with self.canvas:
             for segment in self.maze.get_wall_segments():
-                coords = tuple((val + 0.5) * self.cell_width
+                x1, y1, x2, y2 = tuple((val + 0.5) * self.cell_width
                     for val in segment)
-                Line(points = coords)
+                if x1 > x2:
+                    Line(points=(x1, y1, x1 + 0.5*self.cell_width, y1))
+                    Line(points=(x2 - 0.5*self.cell_width, y2, x2, y2))
+                elif y1 > y2:
+                    Line(points=(x1, y1, x1, y1 + 0.5*self.cell_width))
+                    Line(points=(x2, y2 - 0.5*self.cell_width, x2, y2))
+                else:
+                    Line(points = (x1, y1, x2, y2))
 
         empty_cells = itertools.cycle(self.maze.get_empty_cells())
 
@@ -186,7 +197,6 @@ class EngineWidget(Widget):
         for widget in self.non_player_object_widgets:
             widget.check_state(self)
 
-
     def on_game_over(self, *args):
         print("you lose")
         self.update_event.cancel()
@@ -194,6 +204,7 @@ class EngineWidget(Widget):
     def on_win(self, *args):
         print("you win")
         self.update_event.cancel()
+
 
 class GameObjectWidget(Widget):
     def __init__(self, game_object, **kwargs):
@@ -204,6 +215,7 @@ class GameObjectWidget(Widget):
     def check_state(self, engine):
         if self.game_object.marked_for_removal:
             engine.remove_game_object(self)
+
 
 class MovingGameObjectWidget(GameObjectWidget):
     def __init__(self, game_object, speed=11, **kwargs):
@@ -235,8 +247,6 @@ class PlayerWidget(MovingGameObjectWidget):
             self.has_crystal = self.game_object.has_crystal
             color = (0, 1, 1) if self.has_crystal else (0, 1, 0)
             self.canvas.get_group("color")[0].rgb = color
-            
-
 
 
 class EnemyWidget(MovingGameObjectWidget):
@@ -249,8 +259,10 @@ class EnemyWidget(MovingGameObjectWidget):
         if self.game_object.marked_for_removal:
             self.move_event.cancel()
 
+
 class GoldWidget(GameObjectWidget):
     pass
+
 
 class CrystalWidget(GameObjectWidget):
     pass
