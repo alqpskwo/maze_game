@@ -86,12 +86,20 @@ class Maze(object):
     def is_empty(self, x, y):
             return not self.cells[x][y]
 
-class Player(object):
+class GameObject(object):
     def __init__(self, x, y, maze):
         self.x = x
         self.y = y
         self.maze = maze
         self.marked_for_removal = False
+
+    def collide(self, player):
+        pass
+
+
+class Player(GameObject):
+    def __init__(self, x, y, maze):
+        super(Player, self).__init__(x, y, maze)
         self.gold = False
         self.has_crystal = False
 
@@ -105,15 +113,13 @@ class Player(object):
         elif direction == 'left' and self.maze.is_empty(self.x - 1, self.y):
             self.x -= 1
 
-class Enemy(object):
+class Enemy(GameObject):
     def __init__(self, x, y, maze):
-        self.x = x
-        self.y = y
+        super(Enemy, self).__init__(x, y, maze)
         self.prev_loc = (x, y)
-        self.maze = maze
-        self.marked_for_removal = False
 
-    def move(self):
+
+    def move(self, *args):
         neighbors = [cell for cell in [(self.x - 1, self.y),
                                          (self.x, self.y + 1),
                                        (self.x + 1, self.y),
@@ -131,24 +137,12 @@ class Enemy(object):
         else:
             player.marked_for_removal = True
 
-class Gold(object):
-    def __init__(self, x, y, maze):
-        self.x = x
-        self.y = y
-        self.maze = maze
-        self.marked_for_removal = False
-
+class Gold(GameObject):
     def collide(self, player):
         player.gold += 1
         self.marked_for_removal = True
 
-class Crystal(object):
-    def __init__(self, x, y, maze):
-        self.x = x
-        self.y = y
-        self.maze = maze
-        self.marked_for_removal = False
-
+class Crystal(GameObject):
     def collide(self, player):
         if not player.has_crystal:
             player.has_crystal = True

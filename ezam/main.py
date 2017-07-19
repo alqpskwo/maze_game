@@ -142,7 +142,7 @@ class EngineWidget(Widget):
 
         for i in range(0, self.num_enemies):
             x,y = next(empty_cells)
-            enemy_widget = EnemyWidget(Enemy(x, y, self.maze), self.enemy_speed)
+            enemy_widget = EnemyWidget(Enemy(x, y, self.maze), speed=self.enemy_speed)
             self.non_player_object_widgets.append(enemy_widget)
             self.add_widget(enemy_widget)
 
@@ -195,25 +195,36 @@ class EngineWidget(Widget):
         print("you win")
         self.update_event.cancel()
 
-
-class PlayerWidget(Widget):
-    def __init__(self, player, **kwargs):
-        super(PlayerWidget, self).__init__(**kwargs)
-        self.game_object = player
+class GameObjectWidget(Widget):
+    def __init__(self, game_object, **kwargs):
+        super(GameObjectWidget, self).__init__(**kwargs)
+        self.game_object = game_object
         self.pos = (20*self.game_object.x+10, 20*self.game_object.y+10)
-        self.has_crystal = False
-        
 
+    def check_state(self, engine):
+        if self.game_object.marked_for_removal:
+            engine.remove_game_object(self)
+
+class MovingGameObjectWidget(GameObjectWidget):
+    def __init__(self, game_object, speed=11, **kwargs):
+        super(MovingGameObjectWidget, self).__init__(game_object, **kwargs)
+        self.step_time = 0.6 - 0.05 * speed
 
     def animate(self):
         animation = Animation(x = 20 * self.game_object.x + 10,
                               y = 20 * self.game_object.y + 10,
-                              d = 0.05)
+                              d = self.step_time)
         animation.start(self)
 
-    def move(self, direction):
-        self.game_object.move(direction)
-        self.animate()
+    def move(self, *args):
+        self.game_object.move(*args)
+        self.animate()    
+
+
+class PlayerWidget(MovingGameObjectWidget):
+    def __init__(self, player, **kwargs):
+        super(PlayerWidget, self).__init__(player, **kwargs)
+        self.has_crystal = False
 
     def check_state(self, engine):
         if self.game_object.marked_for_removal:
@@ -228,48 +239,21 @@ class PlayerWidget(Widget):
 
 
 
-class EnemyWidget(Widget):
-    def __init__(self, enemy, enemy_speed, **kwargs):
-        super(EnemyWidget, self).__init__(**kwargs)
-        self.game_object = enemy
-        self.pos = (20*self.game_object.x+10, 20*self.game_object.y+10)
-        self.step_time = 0.6 - 0.05 * enemy_speed
+class EnemyWidget(MovingGameObjectWidget):
+    def __init__(self, enemy, speed=11, **kwargs):
+        super(EnemyWidget, self).__init__(enemy, speed=speed, **kwargs)
         self.move_event = Clock.schedule_interval(self.move, self.step_time)
 
-    def animate(self):
-        animation = Animation(x = 20 * self.game_object.x + 10,
-                              y = 20 * self.game_object.y + 10,
-                              d = 0.9*self.step_time)
-        animation.start(self)
-
-    def move(self, dt):
-        self.game_object.move()
-        self.animate()
-
     def check_state(self, engine):
+        super(EnemyWidget, self).check_state(engine)
         if self.game_object.marked_for_removal:
             self.move_event.cancel()
-            engine.remove_game_object(self)
 
-class GoldWidget(Widget):
-    def __init__(self, gold, **kwargs):
-        super(GoldWidget, self).__init__(**kwargs)
-        self.game_object = gold
-        self.pos = (20*self.game_object.x+10, 20*self.game_object.y+10)
+class GoldWidget(GameObjectWidget):
+    pass
 
-    def check_state(self, engine):
-        if self.game_object.marked_for_removal:
-            engine.remove_game_object(self)
-
-class CrystalWidget(Widget):
-    def __init__(self, crystal, **kwargs):
-        super(CrystalWidget, self).__init__(**kwargs)
-        self.game_object = crystal
-        self.pos = (20*self.game_object.x+10, 20*self.game_object.y+10)
-
-    def check_state(self, engine):
-        if self.game_object.marked_for_removal:
-            engine.remove_game_object(self)
+class CrystalWidget(GameObjectWidget):
+    pass
 
 
 
