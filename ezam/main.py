@@ -4,20 +4,26 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.slider import Slider
 from kivy.uix.button import Button
+from kivy.uix.label import Label
 from kivy.graphics import Line, Rectangle, Color
 from kivy.core.window import Window
 from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty
 from maze import Maze, Player, Enemy, Gold, Crystal
+import itertools
 
 
 class GameWidget(BoxLayout):
     def __init__(self, **kwargs):
         super(GameWidget, self).__init__(**kwargs)
-        self.settings = {'num_enemies': 3, 'num_gold': 5}
+        self.settings = {'maze_width': 12,
+                         'maze_height': 12,
+                         'num_enemies': 5,
+                         'num_gold': 5,
+                         'num_crystals': 5,
+                         'enemy_speed': 4}
         self.load_welcome_screen()
-        #self.load_settings_screen()
 
     def new_game(self, *args):
         engine = EngineWidget(self.settings)
@@ -29,7 +35,7 @@ class GameWidget(BoxLayout):
     def load_game_over_screen(self, engine, *args):
         self.clear_widgets()
         game_over_widget = GameOverWidget()
-        game_over_widget.new_game_btn.bind(on_release=self.new_game)
+        game_over_widget.return_btn.bind(on_release=self.load_welcome_screen)
         self.add_widget(game_over_widget)
 
     def load_welcome_screen(self, *args):
@@ -42,7 +48,7 @@ class GameWidget(BoxLayout):
     def load_win_screen(self, engine, *args):
         self.clear_widgets()
         win_widget = WinWidget()
-        win_widget.new_game_btn.bind(on_release=self.new_game)
+        win_widget.return_btn.bind(on_release=self.load_welcome_screen)
         self.add_widget(win_widget)
 
     def load_settings_screen(self, *args):
@@ -53,25 +59,36 @@ class GameWidget(BoxLayout):
         
 
 class GameOverWidget(Widget):
-    new_game_btn = ObjectProperty(None)
+    return_btn = ObjectProperty(None)
 
 class WelcomeWidget(Widget):
     new_game_btn = ObjectProperty(None)
 
 class WinWidget(Widget):
-    new_game_btn = ObjectProperty(None)
+    return_btn = ObjectProperty(None)
 
 class SettingScreenWidget(BoxLayout):
     return_btn = ObjectProperty(None)
 
     def __init__(self, settings,**kwargs):
-        super(SettingScreenWidget,self).__init__(orientation='vertical',**kwargs)
+        super(SettingScreenWidget,self).__init__(orientation='vertical', spacing=20, padding = (30, 50), **kwargs)
+        #self.add_widget(Widget(size_hint = (None, 0.5)))
+        self.add_widget(Label(text='Settings', font_size = 40, size_hint = (None, None), pos_hint = {'center_x':0.5}))
+        self.add_widget(SettingWidget('maze_width', 'maze width:',
+                                      5, 50, settings['maze_width'], settings))
+        self.add_widget(SettingWidget('maze_height', 'maze height:',
+                                      5, 50, settings['maze_height'], settings))
         self.add_widget(SettingWidget('num_enemies', 'number of enemies:',
                                       0, 50, settings['num_enemies'], settings))
         self.add_widget(SettingWidget('num_gold', 'number of gold coins:',
                                       0, 50, settings['num_gold'], settings))
-        self.return_btn = Button(text="Done")
+        self.add_widget(SettingWidget('num_crystals', 'number of crystals:',
+                                      0, 50, settings['num_crystals'], settings))
+        self.add_widget(SettingWidget('enemy_speed', 'enemy speed:',
+                                      1, 10, settings['enemy_speed'], settings))
+        self.return_btn = Button(text="Done", size=(170,40), size_hint=(None, None), pos_hint = {'center_x':0.5})
         self.add_widget(self.return_btn)
+        #self.add_widget(Widget(size_hint = (None, 0.5)))
 
 
 class SettingWidget(BoxLayout):
@@ -104,9 +121,10 @@ class EngineWidget(Widget):
         self.cell_width = 20
         self.num_enemies = settings['num_enemies']
         self.num_gold = settings['num_gold']
-        self.num_crystals = 5
+        self.num_crystals = settings['num_crystals']
+        self.enemy_speed = settings['enemy_speed']
 
-        self.maze = Maze(25, 25)
+        self.maze = Maze(2*settings['maze_width'] + 1, 2*settings['maze_height'] + 1)
         self.maze.generate()
 
         with self.canvas:
@@ -115,9 +133,9 @@ class EngineWidget(Widget):
                     for val in segment)
                 Line(points = coords)
 
-        empty_cells = self.maze.get_empty_cells()
+        empty_cells = itertools.cycle(self.maze.get_empty_cells())
 
-        x,y = empty_cells.pop()
+        x,y = next(empty_cells)
         player = Player(x, y, self.maze)
         self.player_widget = PlayerWidget(player)
         self.add_widget(self.player_widget)
@@ -125,19 +143,19 @@ class EngineWidget(Widget):
         self.non_player_object_widgets =[]
 
         for i in range(0, self.num_enemies):
-            x,y = empty_cells.pop()
-            enemy_widget = EnemyWidget(Enemy(x, y, self.maze))
+            x,y = next(empty_cells)
+            enemy_widget = EnemyWidget(Enemy(x, y, self.maze), self.enemy_speed)
             self.non_player_object_widgets.append(enemy_widget)
             self.add_widget(enemy_widget)
 
         for i in range(0, self.num_gold):
-            x,y = empty_cells.pop()
+            x,y = next(empty_cells)
             gold_widget = GoldWidget(Gold(x, y, self.maze))
             self.non_player_object_widgets.append(gold_widget)
             self.add_widget(gold_widget)
 
         for i in range(0, self.num_crystals):
-            x,y = empty_cells.pop()
+            x,y = next(empty_cells)
             crystal_widget = CrystalWidget(Crystal(x, y, self.maze))
             self.non_player_object_widgets.append(crystal_widget)
             self.add_widget(crystal_widget)
@@ -206,23 +224,24 @@ class PlayerWidget(Widget):
             engine.dispatch('on_win')
         if self.game_object.has_crystal != self.has_crystal:
             self.has_crystal = self.game_object.has_crystal
-            color = (1, 0, 1) if self.has_crystal else (0, 1, 0)
+            color = (0, 1, 1) if self.has_crystal else (0, 1, 0)
             self.canvas.get_group("color")[0].rgb = color
             
 
 
 
 class EnemyWidget(Widget):
-    def __init__(self, enemy, **kwargs):
+    def __init__(self, enemy, enemy_speed, **kwargs):
         super(EnemyWidget, self).__init__(**kwargs)
         self.game_object = enemy
         self.pos = (20*self.game_object.x+10, 20*self.game_object.y+10)
-        self.move_event = Clock.schedule_interval(self.move, 0.3)
+        self.step_time = 0.6 - 0.05 * enemy_speed
+        self.move_event = Clock.schedule_interval(self.move, self.step_time)
 
     def animate(self):
         animation = Animation(x = 20 * self.game_object.x + 10,
                               y = 20 * self.game_object.y + 10,
-                              d = 0.3)
+                              d = 0.9*self.step_time)
         animation.start(self)
 
     def move(self, dt):
