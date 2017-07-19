@@ -113,11 +113,16 @@ class Player(GameObject):
         super(Player, self).__init__(x, y, maze)
         self.gold = False
         self.has_crystal = False
+        self.prev_loc = (x, y)
 
     def move(self, direction):
-        neighbor = self.maze.neighbor(self.x, self.y, direction)
-        if self.maze.is_empty(*neighbor):
-            self.x, self.y = neighbor
+        self.prev_loc = self.x, self.y
+        new_x, new_y = self.maze.neighbor(self.x, self.y, direction)
+        if self.maze.is_empty(new_x, new_y):
+            self.x, self.y = new_x, new_y
+            return direction
+        else:
+            return None
 
 class Enemy(GameObject):
     def __init__(self, x, y, maze):
@@ -126,14 +131,18 @@ class Enemy(GameObject):
 
 
     def move(self, *args):
-        neighbors = [self.maze.neighbor(self.x, self.y, direction)
-            for direction in ['up', 'down', 'left', 'right']]
-        candidates = [cell for cell in neighbors 
-            if self.maze.is_empty(*cell) and cell != self.prev_loc]
+        candidates = []
+        for direction in ['up', 'down', 'left', 'right']:
+            cell = self.maze.neighbor(self.x, self.y, direction)
+            if self.maze.is_empty(*cell) and cell != self.prev_loc:
+                candidates.append( (direction, *cell))
 
         self.prev_loc = (self.x, self.y)
         if candidates:
-            self.x, self.y = choice(candidates)
+            direction, self.x, self.y = choice(candidates)
+            return direction
+        else:
+            return None
 
     def collide(self, player):
         if player.has_crystal:

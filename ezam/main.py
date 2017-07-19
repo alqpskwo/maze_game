@@ -146,14 +146,14 @@ class EngineWidget(Widget):
 
         x,y = next(empty_cells)
         player = Player(x, y, self.maze)
-        self.player_widget = PlayerWidget(player)
+        self.player_widget = PlayerWidget(player, engine=self)
         self.add_widget(self.player_widget)
 
         self.non_player_object_widgets =[]
 
         for i in range(0, self.num_enemies):
             x,y = next(empty_cells)
-            enemy_widget = EnemyWidget(Enemy(x, y, self.maze), speed=self.enemy_speed)
+            enemy_widget = EnemyWidget(Enemy(x, y, self.maze), speed=self.enemy_speed, engine=self)
             self.non_player_object_widgets.append(enemy_widget)
             self.add_widget(enemy_widget)
 
@@ -205,6 +205,10 @@ class EngineWidget(Widget):
         print("you win")
         self.update_event.cancel()
 
+    def check_pos(self, game_object, *args):
+        game_object.x = game_object.x % (self.maze.width * self.cell_width)
+        game_object.y = game_object.y % (self.maze.height * self.cell_width)
+
 
 class GameObjectWidget(Widget):
     def __init__(self, game_object, **kwargs):
@@ -218,19 +222,31 @@ class GameObjectWidget(Widget):
 
 
 class MovingGameObjectWidget(GameObjectWidget):
-    def __init__(self, game_object, speed=11, **kwargs):
+    def __init__(self, game_object, speed=11, engine=None, **kwargs):
         super(MovingGameObjectWidget, self).__init__(game_object, **kwargs)
         self.step_time = 0.6 - 0.05 * speed
+        self.bind(pos=engine.check_pos)
 
-    def animate(self):
-        animation = Animation(x = 20 * self.game_object.x + 10,
-                              y = 20 * self.game_object.y + 10,
+    def animate(self, direction):
+        old_x, old_y = self.game_object.prev_loc
+        new_x, new_y = old_x, old_y
+        if direction == 'up':
+            new_y += 1
+        elif direction == 'right':
+            new_x += 1
+        elif direction == 'down':
+            new_y -= 1
+        elif direction == 'left':
+            new_x -= 1
+        animation = Animation(x = 20 * new_x + 10,
+                              y = 20 * new_y + 10,
                               d = self.step_time)
         animation.start(self)
 
     def move(self, *args):
-        self.game_object.move(*args)
-        self.animate()    
+        direction = self.game_object.move(*args)
+        self.animate(direction)
+
 
 
 class PlayerWidget(MovingGameObjectWidget):
