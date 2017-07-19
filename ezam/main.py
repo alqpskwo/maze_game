@@ -72,7 +72,6 @@ class SettingScreenWidget(BoxLayout):
 
     def __init__(self, settings,**kwargs):
         super(SettingScreenWidget,self).__init__(orientation='vertical', spacing=20, padding = (30, 50), **kwargs)
-        #self.add_widget(Widget(size_hint = (None, 0.5)))
         self.add_widget(Label(text='Settings', font_size = 40, size_hint = (None, None), pos_hint = {'center_x':0.5}))
         self.add_widget(SettingWidget('maze_width', 'maze width:',
                                       5, 50, settings['maze_width'], settings))
@@ -88,7 +87,6 @@ class SettingScreenWidget(BoxLayout):
                                       1, 10, settings['enemy_speed'], settings))
         self.return_btn = Button(text="Done", size=(170,40), size_hint=(None, None), pos_hint = {'center_x':0.5})
         self.add_widget(self.return_btn)
-        #self.add_widget(Widget(size_hint = (None, 0.5)))
 
 
 class SettingWidget(BoxLayout):
