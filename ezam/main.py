@@ -131,13 +131,13 @@ class EngineWidget(Widget):
         self.maze = Maze(2*settings['maze_width'] + 1, 2*settings['maze_height'] + 1)
         self.maze.generate()
 
-        screen_width = self.maze.width * self.cell_width
-        screen_height = self.maze.height * self.cell_width
+        self.screen_width = self.maze.width * self.cell_width
+        self.screen_height = self.maze.height * self.cell_width
 
         with self.canvas:
             for segment in self.maze.get_wall_segments():
-                for dx in [-screen_width, 0, screen_height]:
-                    for dy in [-screen_height, 0, screen_height]:
+                for dx in [-self.screen_width, 0, self.screen_width]:
+                    for dy in [-self.screen_height, 0, self.screen_height]:
                         x1, y1, x2, y2 = tuple((val + 0.5) * self.cell_width
                             for val in segment)
                         x1 += dx
@@ -186,7 +186,8 @@ class EngineWidget(Widget):
             self.add_widget(crystal_widget)
 
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
-        self._keyboard.bind(on_key_down=self._on_keyboard_down)
+        self._keyboard.bind(on_key_down=self._on_keyboard_down,
+                            on_key_up = self._on_keyboard_up)
 
         self.update_event = Clock.schedule_interval(self.update, 0.01)
 
@@ -196,7 +197,13 @@ class EngineWidget(Widget):
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         if keycode[1] in ['up', 'down', 'left', 'right']:
-            self.player_widget.move(keycode[1])
+            self.player_widget.direction.add(keycode[1])
+            self.player_widget.move()
+
+    def _on_keyboard_up(self, keyboard, keycode, *args):
+        if keycode[1] in ['up', 'down', 'left', 'right']:
+            self.player_widget.direction.discard(keycode[1])
+
 
     def remove_game_object(self, game_object_widget):
         self.non_player_object_widgets.remove(game_object_widget)
@@ -213,8 +220,8 @@ class EngineWidget(Widget):
         for widget in self.non_player_object_widgets:
             widget.check_state()
 
-        self.x = 220 - self.player_widget.relative_x
-        self.y = 220 - self.player_widget.relative_y
+        self.x = 500 - self.player_widget.relative_x
+        self.y = 500 - self.player_widget.relative_y
 
         for (line, points) in self.canvas_instructions:
             new_points = []
@@ -236,8 +243,8 @@ class EngineWidget(Widget):
         self.update_event.cancel()
 
     def check_pos(self, game_object, *args):
-        game_object.relative_x = game_object.relative_x % (self.maze.width * self.cell_width)
-        game_object.relative_y = game_object.relative_y % (self.maze.height * self.cell_width)
+        game_object.relative_x = game_object.relative_x % self.screen_width
+        game_object.relative_y = game_object.relative_y % self.screen_height
         
 
 
@@ -245,6 +252,8 @@ class EngineWidget(Widget):
 class GameObjectWidget(Widget):
     relative_x = NumericProperty(None)
     relative_y = NumericProperty(None)
+    screen_width = NumericProperty(0)
+    screen_height = NumericProperty(0)
 
     def __init__(self, game_object, engine, **kwargs):
         super(GameObjectWidget, self).__init__(**kwargs)
@@ -253,6 +262,9 @@ class GameObjectWidget(Widget):
         self.relative_y = 20*self.game_object.y+10
         self.engine = engine
         self.bind(relative_x=engine.check_pos, relative_y=engine.check_pos)
+        self.animation_queue = []
+        self.screen_width = self.engine.screen_width
+        self.screen_height = self.engine.screen_height
 
     def check_state(self):
         if self.game_object.marked_for_removal:
@@ -260,12 +272,15 @@ class GameObjectWidget(Widget):
 
 
 class MovingGameObjectWidget(GameObjectWidget):
-    def __init__(self, game_object, engine, speed=11, **kwargs):
+    def __init__(self, game_object, engine, speed=10, **kwargs):
         super(MovingGameObjectWidget, self).__init__(game_object, engine, **kwargs)
         self.step_time = 0.6 - 0.05 * speed
+        self.animating = False
+        self.animation_queue = []
         
 
-    def animate(self, direction):
+    def add_animation(self, direction):
+        self.engine.check_pos(self)
         old_x, old_y = self.game_object.prev_loc
         new_x, new_y = old_x, old_y
         if direction == 'up':
@@ -280,11 +295,28 @@ class MovingGameObjectWidget(GameObjectWidget):
         animation = Animation(relative_x = 20 * new_x + 10,
                               relative_y = 20 * new_y + 10,
                               d = self.step_time)
-        animation.start(self)
+
+        animation.bind(on_complete=self.on_animation_complete)
+        self.animation_queue.append(animation)
+        self.animate()
+
+    def animate(self):
+        #pdb.set_trace()
+        if (not self.animating) and len(self.animation_queue) > 0:
+            animation = self.animation_queue.pop(0)
+            self.animating = True
+            animation.start(self)
 
     def move(self, *args):
         direction = self.game_object.move(*args)
-        self.animate(direction)
+        if direction:
+            self.add_animation(direction)
+
+
+    def on_animation_complete(self, *args):
+        self.animating = False
+        self.animate()
+
 
 
 
@@ -292,7 +324,9 @@ class PlayerWidget(MovingGameObjectWidget):
     def __init__(self, player, engine, **kwargs):
         super(PlayerWidget, self).__init__(player, engine, **kwargs)
         self.has_crystal = False
-        self.pos = (220, 220)
+        self.pos = (500, 500)
+        self.direction = set()
+        self.move_event = Clock.schedule_interval(self.move, 0.01)
 
     def check_state(self):
         if self.game_object.marked_for_removal:
@@ -304,12 +338,18 @@ class PlayerWidget(MovingGameObjectWidget):
             color = (0, 1, 1) if self.has_crystal else (0, 1, 0)
             self.canvas.get_group("color")[0].rgb = color
 
+    def move(self, *args):
+        if not self.animating and self.direction:
+            for direction in self.direction: # = sorted(list(self.direction)).pop()
+                super(PlayerWidget, self).move(direction)
+
 
 
 class EnemyWidget(MovingGameObjectWidget):
     def __init__(self, enemy, engine, speed=11, **kwargs):
         super(EnemyWidget, self).__init__(enemy, engine, speed=speed, **kwargs)
         self.move_event = Clock.schedule_interval(self.move, self.step_time)
+        
 
     def check_state(self):
         super(EnemyWidget, self).check_state()

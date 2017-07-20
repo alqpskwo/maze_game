@@ -3,13 +3,36 @@
 <PlayerWidget>:
     size: 10, 10
     canvas:
-
         Color:
             group: 'color'
             rgb: (0, 1, 0, 1)
         Rectangle:
             size: 10, 10
             pos: (self.x - 5, self.y - 5)
+        Rectangle:
+            size: 10, 10
+            pos: (self.screen_width + self.x - 5, self.y - 5)
+        Rectangle:
+            size: 10, 10
+            pos: (-self.screen_width + self.x - 5, self.y - 5)
+        Rectangle:
+            size: 10, 10
+            pos: (self.x - 5, self.screen_height + self.y - 5)
+        Rectangle:
+            size: 10, 10
+            pos: (self.screen_width + self.x - 5, self.screen_height + self.y - 5)
+        Rectangle:
+            size: 10, 10
+            pos: (-self.screen_width + self.x - 5, self.screen_height + self.y - 5)
+        Rectangle:
+            size: 10, 10
+            pos: (self.x - 5, -self.screen_height + self.y - 5)
+        Rectangle:
+            size: 10, 10
+            pos: (self.screen_width + self.x - 5, -self.screen_height + self.y - 5)
+        Rectangle:
+            size: 10, 10
+            pos: (-self.screen_width + self.x - 5, -self.screen_height + self.y - 5)
 
 <EnemyWidget>:
     size: 10, 10
@@ -18,6 +41,22 @@
             rgb: (1, 0, 0, 1)
         Triangle:
             points: (self.x, self.y + 5, self.x - 5, self.y - 5, self.x + 5, self.y - 5)
+        Triangle:
+            points: (self.x+self.screen_width, self.y + 5, self.x+self.screen_width - 5, self.y - 5, self.x+self.screen_width + 5, self.y - 5)
+        Triangle:
+            points: (self.x-self.screen_width, self.y + 5, self.x-self.screen_width - 5, self.y - 5, self.x-self.screen_width + 5, self.y - 5)
+        Triangle:
+            points: (self.x, self.y+self.screen_height + 5, self.x - 5, self.y+self.screen_height - 5, self.x + 5, self.y+self.screen_height - 5)
+        Triangle:
+            points: (self.x+self.screen_width, self.y+self.screen_height + 5, self.x+self.screen_width - 5, self.y+self.screen_height - 5, self.x+self.screen_width + 5, self.y+self.screen_height - 5)
+        Triangle:
+            points: (self.x-self.screen_width, self.y+self.screen_height + 5, self.x-self.screen_width - 5, self.y+self.screen_height - 5, self.x-self.screen_width + 5, self.y+self.screen_height - 5)
+        Triangle:
+            points: (self.x, self.y-self.screen_height + 5, self.x - 5, self.y-self.screen_height - 5, self.x + 5, self.y-self.screen_height - 5)
+        Triangle:
+            points: (self.x+self.screen_width, self.y-self.screen_height + 5, self.x+self.screen_width - 5, self.y-self.screen_height - 5, self.x+self.screen_width + 5, self.y-self.screen_height - 5)
+        Triangle:
+            points: (self.x-self.screen_width, self.y-self.screen_height + 5, self.x-self.screen_width - 5, self.y-self.screen_height - 5, self.x-self.screen_width + 5, self.y-self.screen_height - 5)
 
 <CrystalWidget>:
     size: 10, 10
@@ -26,6 +65,22 @@
             rgb: (0, 0, 1, 1)
         Quad:
             points: (self.x, self.y + 5, self.x + 5, self.y, self.x, self.y - 5, self.x - 5, self.y)
+        Quad:
+            points: (self.x+self.screen_width, self.y + 5, self.x+self.screen_width + 5, self.y, self.x+self.screen_width, self.y - 5, self.x+self.screen_width - 5, self.y)
+        Quad:
+            points: (self.x-self.screen_width, self.y + 5, self.x-self.screen_width + 5, self.y, self.x-self.screen_width, self.y - 5, self.x-self.screen_width - 5, self.y)
+        Quad:
+            points: (self.x, self.y+self.screen_height + 5, self.x + 5, self.y+self.screen_height, self.x, self.y+self.screen_height - 5, self.x - 5, self.y+self.screen_height)
+        Quad:
+            points: (self.x+self.screen_width, self.y+self.screen_height + 5, self.x+self.screen_width + 5, self.y+self.screen_height, self.x+self.screen_width, self.y+self.screen_height - 5, self.x+self.screen_width - 5, self.y+self.screen_height)
+        Quad:
+            points: (self.x-self.screen_width, self.y+self.screen_height + 5, self.x-self.screen_width + 5, self.y+self.screen_height, self.x-self.screen_width, self.y+self.screen_height - 5, self.x-self.screen_width - 5, self.y+self.screen_height)
+        Quad:
+            points: (self.x, self.y-self.screen_height + 5, self.x + 5, self.y-self.screen_height, self.x, self.y-self.screen_height - 5, self.x - 5, self.y-self.screen_height)
+        Quad:
+            points: (self.x+self.screen_width, self.y-self.screen_height + 5, self.x+self.screen_width + 5, self.y-self.screen_height, self.x+self.screen_width, self.y-self.screen_height - 5, self.x+self.screen_width - 5, self.y-self.screen_height)
+        Quad:
+            points: (self.x-self.screen_width, self.y-self.screen_height + 5, self.x-self.screen_width + 5, self.y-self.screen_height, self.x-self.screen_width, self.y-self.screen_height - 5, self.x-self.screen_width - 5, self.y-self.screen_height)
 
 <GoldWidget>:
     size: 10, 10
@@ -35,6 +90,30 @@
         Ellipse:
             size: 10, 10
             pos: (self.x - 5, self.y - 5)
+        Ellipse:
+            size: 10, 10
+            pos: (self.x+ self.screen_width - 5, self.y - 5)
+        Ellipse:
+            size: 10, 10
+            pos: (self.x-self.screen_width - 5, self.y - 5)
+        Ellipse:
+            size: 10, 10
+            pos: (self.x - 5, self.y+self.screen_height - 5)
+        Ellipse:
+            size: 10, 10
+            pos: (self.x+ self.screen_width - 5, self.y+self.screen_height - 5)
+        Ellipse:
+            size: 10, 10
+            pos: (self.x-self.screen_width - 5, self.y+self.screen_height - 5)
+        Ellipse:
+            size: 10, 10
+            pos: (self.x - 5, self.y-self.screen_height - 5)
+        Ellipse:
+            size: 10, 10
+            pos: (self.x+ self.screen_width - 5, self.y-self.screen_height - 5)
+        Ellipse:
+            size: 10, 10
+            pos: (self.x-self.screen_width - 5, self.y-self.screen_height - 5)
 
 <GameOverWidget>:
     return_btn: return_btn
