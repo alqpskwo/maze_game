@@ -1,5 +1,4 @@
 from random import shuffle, choice
-from pdb import set_trace
 
 class Maze(object):
     WIDTH_MIN = 3
@@ -17,8 +16,8 @@ class Maze(object):
                 Maze.HEIGHT_MIN)
             raise ValueError(message)
 
-        self.width = width - 1
-        self.height = height - 1
+        self.width = width
+        self.height = height
 
         self.cells =[[x % 2 == 0 or y % 2 == 0
                       for y in range(0, self.height)]
@@ -28,8 +27,8 @@ class Maze(object):
         walls = []
         regions = {}
 
-        for x in range(0, self.width):
-            for y in range(0, self.height):
+        for x in range(1, self.width - 1):
+            for y in range(1, self.height - 1):
                 if x % 2 != y % 2:
                     walls.append((x,y))
                 elif not self.cells[x][y]:
@@ -42,11 +41,11 @@ class Maze(object):
 
             # Find the pair of rooms the wall separates.
             if wall_x % 2 == 0:
-                room1 = ( (wall_x - 1) % self.width, wall_y)
-                room2 = ( (wall_x + 1) % self.width, wall_y)
+                room1 = (wall_x - 1, wall_y)
+                room2 = (wall_x + 1, wall_y)
             else:
-                room1 = (wall_x, (wall_y - 1) % self.height)
-                room2 = (wall_x, (wall_y + 1) % self.height)
+                room1 = (wall_x, wall_y - 1)
+                room2 = (wall_x, wall_y + 1)
 
             # If the walls are not already connected, delete the wall.
             if not room2 in regions[room1]:
@@ -69,10 +68,10 @@ class Maze(object):
         for y in range(0, self.height):
             for x in range(0, self.width):
                 if self.cells[x][y]:
-                    if self.cells[(x + 1) % self.width][y]:
-                        wall_segments.append((x,y,(x + 1) % self.width,y))
-                    if self.cells[x][(y + 1) % self.height]:
-                        wall_segments.append((x,y,x,(y+1) % self.height))
+                    if x + 1 < self.width and self.cells[x + 1][y]:
+                        wall_segments.append((x,y,x+1,y))
+                    if y + 1 < self.height and self.cells[x][y + 1]:
+                        wall_segments.append((x,y,x,y+1))
         return wall_segments
 
     def get_empty_cells(self):
@@ -86,16 +85,6 @@ class Maze(object):
 
     def is_empty(self, x, y):
             return not self.cells[x][y]
-
-    def neighbor(self, x, y, direction):
-        if direction == 'up':
-            return(x, (y + 1) % self.height)
-        elif direction == 'right':
-            return((x + 1) % self.width, y)
-        elif direction == 'down':
-            return(x, (y - 1) % self.height)
-        elif direction == 'left':
-            return((x - 1) % self.width, y)
 
 class GameObject(object):
     def __init__(self, x, y, maze):
@@ -113,16 +102,21 @@ class Player(GameObject):
         super(Player, self).__init__(x, y, maze)
         self.gold = False
         self.has_crystal = False
-        self.prev_loc = (x, y)
 
     def move(self, direction):
-        self.prev_loc = self.x, self.y
-        new_x, new_y = self.maze.neighbor(self.x, self.y, direction)
-        if self.maze.is_empty(new_x, new_y):
-            self.x, self.y = new_x, new_y
-            return direction
-        else:
-            return None
+        if direction == 'up' and self.maze.is_empty(self.x, self.y + 1):
+            self.y += 1
+            return True
+        elif direction == 'down' and self.maze.is_empty(self.x, self.y - 1):
+            self.y -= 1
+            return True
+        elif direction == 'right' and self.maze.is_empty(self.x + 1, self.y):
+            self.x += 1
+            return True
+        elif direction == 'left' and self.maze.is_empty(self.x - 1, self.y):
+            self.x -= 1
+            return True
+        return False
 
 class Enemy(GameObject):
     def __init__(self, x, y, maze):
@@ -131,18 +125,16 @@ class Enemy(GameObject):
 
 
     def move(self, *args):
-        candidates = []
-        for direction in ['up', 'down', 'left', 'right']:
-            cell = self.maze.neighbor(self.x, self.y, direction)
-            if self.maze.is_empty(*cell) and cell != self.prev_loc:
-                candidates.append( (direction, *cell))
+        neighbors = [cell for cell in [(self.x - 1, self.y),
+                                         (self.x, self.y + 1),
+                                       (self.x + 1, self.y),
+                                       (self.x, self.y - 1)]
+                        if self.maze.is_empty(*cell) and cell!=self.prev_loc]
 
         self.prev_loc = (self.x, self.y)
-        if candidates:
-            direction, self.x, self.y = choice(candidates)
-            return direction
-        else:
-            return None
+        if neighbors:
+            self.x, self.y = choice(neighbors)
+            return True
 
     def collide(self, player):
         if player.has_crystal:

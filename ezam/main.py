@@ -131,32 +131,14 @@ class EngineWidget(Widget):
         self.maze = Maze(2*settings['maze_width'] + 1, 2*settings['maze_height'] + 1)
         self.maze.generate()
 
-        self.screen_width = self.maze.width * self.cell_width
-        self.screen_height = self.maze.height * self.cell_width
 
         with self.canvas:
             for segment in self.maze.get_wall_segments():
-                for dx in [-self.screen_width, 0, self.screen_width]:
-                    for dy in [-self.screen_height, 0, self.screen_height]:
-                        x1, y1, x2, y2 = tuple((val + 0.5) * self.cell_width
-                            for val in segment)
-                        x1 += dx
-                        x2 += dx
-                        y1 += dy
-                        y2 += dy
-                        if x1 > x2:
-                            l =Line(points=(x1, y1, x1 + 0.5*self.cell_width, y1))
-                            self.canvas_instructions.append((l, l.points[:]))
-                            l = Line(points=(x2 - 0.5*self.cell_width, y2, x2, y2))
-                            self.canvas_instructions.append((l, l.points[:]))
-                        elif y1 > y2:
-                            l = Line(points=(x1, y1, x1, y1 + 0.5*self.cell_width))
-                            self.canvas_instructions.append((l, l.points[:]))
-                            l = Line(points=(x2, y2 - 0.5*self.cell_width, x2, y2))
-                            self.canvas_instructions.append((l, l.points[:]))
-                        else:
-                            l = Line(points = (x1, y1, x2, y2))
-                            self.canvas_instructions.append((l, l.points[:]))
+                x1, y1, x2, y2 = tuple((val + 0.5) * self.cell_width
+                    for val in segment)
+                
+                l = Line(points = (x1, y1, x2, y2))
+                self.canvas_instructions.append((l, l.points[:]))
 
         empty_cells = itertools.cycle(self.maze.get_empty_cells())
 
@@ -241,10 +223,6 @@ class EngineWidget(Widget):
     def on_win(self, *args):
         print("you win")
         self.update_event.cancel()
-
-    def check_pos(self, game_object, *args):
-        game_object.relative_x = game_object.relative_x % self.screen_width
-        game_object.relative_y = game_object.relative_y % self.screen_height
         
 
 
@@ -252,8 +230,6 @@ class EngineWidget(Widget):
 class GameObjectWidget(Widget):
     relative_x = NumericProperty(None)
     relative_y = NumericProperty(None)
-    screen_width = NumericProperty(0)
-    screen_height = NumericProperty(0)
 
     def __init__(self, game_object, engine, **kwargs):
         super(GameObjectWidget, self).__init__(**kwargs)
@@ -261,10 +237,7 @@ class GameObjectWidget(Widget):
         self.relative_x = 20*self.game_object.x+10
         self.relative_y = 20*self.game_object.y+10
         self.engine = engine
-        self.bind(relative_x=engine.check_pos, relative_y=engine.check_pos)
         self.animation_queue = []
-        self.screen_width = self.engine.screen_width
-        self.screen_height = self.engine.screen_height
 
     def check_state(self):
         if self.game_object.marked_for_removal:
@@ -279,21 +252,9 @@ class MovingGameObjectWidget(GameObjectWidget):
         self.animation_queue = []
         
 
-    def add_animation(self, direction):
-        self.engine.check_pos(self)
-        old_x, old_y = self.game_object.prev_loc
-        new_x, new_y = old_x, old_y
-        if direction == 'up':
-            new_y += 1
-        elif direction == 'right':
-            new_x += 1
-        elif direction == 'down':
-            new_y -= 1
-        elif direction == 'left':
-            new_x -= 1
-
-        animation = Animation(relative_x = 20 * new_x + 10,
-                              relative_y = 20 * new_y + 10,
+    def add_animation(self):
+        animation = Animation(relative_x = 20 * self.game_object.x + 10,
+                              relative_y = 20 * self.game_object.y + 10,
                               d = self.step_time)
 
         animation.bind(on_complete=self.on_animation_complete)
@@ -308,10 +269,9 @@ class MovingGameObjectWidget(GameObjectWidget):
             animation.start(self)
 
     def move(self, *args):
-        direction = self.game_object.move(*args)
-        if direction:
-            self.add_animation(direction)
-
+        moved = self.game_object.move(*args)
+        if moved:
+            self.add_animation()
 
     def on_animation_complete(self, *args):
         self.animating = False
@@ -340,7 +300,7 @@ class PlayerWidget(MovingGameObjectWidget):
 
     def move(self, *args):
         if not self.animating and self.direction:
-            for direction in self.direction: # = sorted(list(self.direction)).pop()
+            for direction in self.direction:
                 super(PlayerWidget, self).move(direction)
 
 
