@@ -132,13 +132,9 @@ class EngineWidget(Widget):
         self.maze.generate()
 
 
-        with self.canvas:
-            for segment in self.maze.get_wall_segments():
-                x1, y1, x2, y2 = tuple((val + 0.5) * self.cell_width
-                    for val in segment)
-                
-                l = Line(points = (x1, y1, x2, y2))
-                self.canvas_instructions.append((l, l.points[:]))
+        self.maze_widget = MazeWidget(self.maze, self.cell_width)
+        self.add_widget(self.maze_widget)
+
 
         empty_cells = itertools.cycle(self.maze.get_empty_cells())
 
@@ -146,6 +142,8 @@ class EngineWidget(Widget):
         player = Player(x, y, self.maze)
         self.player_widget = PlayerWidget(player, self)
         self.add_widget(self.player_widget)
+        self.on_resize()
+        self.bind(size=self.on_resize)
 
         self.non_player_object_widgets =[]
 
@@ -198,24 +196,19 @@ class EngineWidget(Widget):
 
     def update(self, *args):
         
-        self.x = self.player_widget.x - self.player_widget.relative_x
-        self.y = self.player_widget.y - self.player_widget.relative_y
-
-        for (line, points) in self.canvas_instructions:
-            new_points = []
-            xy_cycle = itertools.cycle([self.x, self.y])
-            for coord in points:
-                new_points.append(next(xy_cycle) + coord)
-            line.points = new_points
+        self.maze_widget.x = self.player_widget.x - self.player_widget.relative_x
+        self.maze_widget.y = self.player_widget.y - self.player_widget.relative_y
+        self.maze_widget.redraw()
 
         for widget in self.non_player_object_widgets:
-            widget.pos = (widget.relative_x + self.x,
-                          widget.relative_y + self.y)
+            widget.pos = (widget.relative_x + self.maze_widget.x,
+                          widget.relative_y + self.maze_widget.y)
 
         self.check_collisions()
         self.player_widget.check_state()
         for widget in self.non_player_object_widgets:
             widget.check_state()
+        #pdb.set_trace()
 
     def on_game_over(self, *args):
         print("you lose")
@@ -224,8 +217,31 @@ class EngineWidget(Widget):
     def on_win(self, *args):
         print("you win")
         self.update_event.cancel()
+
+    def on_resize(self, *args):
+        self.player_widget.pos = (self.width / 2, self.height / 2)
         
 
+class MazeWidget(Widget):
+    def __init__(self, maze, cell_width, **kwargs):
+        super(MazeWidget, self).__init__(**kwargs)
+        self.maze = maze
+        self.canvas_instructions = []
+        with self.canvas:
+                for segment in self.maze.get_wall_segments():
+                    x1, y1, x2, y2 = tuple((val + 0.5) * cell_width
+                        for val in segment)
+                    
+                    l = Line(points = (x1, y1, x2, y2))
+                    self.canvas_instructions.append((l, l.points[:]))
+
+    def redraw(self):
+        for (line, points) in self.canvas_instructions:
+            new_points = []
+            xy_cycle = itertools.cycle([self.x, self.y])
+            for coord in points:
+                new_points.append(next(xy_cycle) + coord)
+            line.points = new_points
 
 
 class GameObjectWidget(Widget):
@@ -285,7 +301,7 @@ class PlayerWidget(MovingGameObjectWidget):
         super(PlayerWidget, self).__init__(player, engine, **kwargs)
         self.has_crystal = False
         self.direction = set()
-        self.pos = (250, 250)
+        #self.pos = (250, 250)
         self.move_event = Clock.schedule_interval(self.move, 0.01)
 
     def check_state(self):
