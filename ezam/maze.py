@@ -106,12 +106,17 @@ class Player(GameObject):
     def move(self, direction):
         if direction == 'up' and self.maze.is_empty(self.x, self.y + 1):
             self.y += 1
+            return True
         elif direction == 'down' and self.maze.is_empty(self.x, self.y - 1):
             self.y -= 1
+            return True
         elif direction == 'right' and self.maze.is_empty(self.x + 1, self.y):
             self.x += 1
+            return True
         elif direction == 'left' and self.maze.is_empty(self.x - 1, self.y):
             self.x -= 1
+            return True
+        return False
 
 class Enemy(GameObject):
     def __init__(self, x, y, maze):
@@ -129,6 +134,7 @@ class Enemy(GameObject):
         self.prev_loc = (self.x, self.y)
         if neighbors:
             self.x, self.y = choice(neighbors)
+            return True
 
     def collide(self, player):
         if player.has_crystal:

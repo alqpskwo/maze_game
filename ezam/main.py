@@ -9,9 +9,10 @@ from kivy.graphics import Line, Rectangle, Color
 from kivy.core.window import Window
 from kivy.animation import Animation
 from kivy.clock import Clock
-from kivy.properties import ObjectProperty
+from kivy.properties import ObjectProperty, NumericProperty
 from maze import Maze, Player, Enemy, Gold, Crystal
 import itertools
+import pdb
 
 
 class GameWidget(BoxLayout):
@@ -61,11 +62,14 @@ class GameWidget(BoxLayout):
 class GameOverWidget(Widget):
     return_btn = ObjectProperty(None)
 
+
 class WelcomeWidget(Widget):
     new_game_btn = ObjectProperty(None)
 
+
 class WinWidget(Widget):
     return_btn = ObjectProperty(None)
+
 
 class SettingScreenWidget(BoxLayout):
     return_btn = ObjectProperty(None)
@@ -111,6 +115,7 @@ class SettingWidget(BoxLayout):
         self.settings[self.field_name] = int(self.slider.value)
         self.val_label.text = str(self.settings[self.field_name])
 
+
 class EngineWidget(Widget):
     def __init__(self, settings, **kwargs):
         super(EngineWidget, self).__init__(**kwargs)
@@ -121,45 +126,50 @@ class EngineWidget(Widget):
         self.num_gold = settings['num_gold']
         self.num_crystals = settings['num_crystals']
         self.enemy_speed = settings['enemy_speed']
+        self.canvas_instructions = []
 
         self.maze = Maze(2*settings['maze_width'] + 1, 2*settings['maze_height'] + 1)
         self.maze.generate()
 
+
         with self.canvas:
             for segment in self.maze.get_wall_segments():
-                coords = tuple((val + 0.5) * self.cell_width
+                x1, y1, x2, y2 = tuple((val + 0.5) * self.cell_width
                     for val in segment)
-                Line(points = coords)
+                
+                l = Line(points = (x1, y1, x2, y2))
+                self.canvas_instructions.append((l, l.points[:]))
 
         empty_cells = itertools.cycle(self.maze.get_empty_cells())
 
         x,y = next(empty_cells)
         player = Player(x, y, self.maze)
-        self.player_widget = PlayerWidget(player)
+        self.player_widget = PlayerWidget(player, self)
         self.add_widget(self.player_widget)
 
         self.non_player_object_widgets =[]
 
         for i in range(0, self.num_enemies):
             x,y = next(empty_cells)
-            enemy_widget = EnemyWidget(Enemy(x, y, self.maze), speed=self.enemy_speed)
+            enemy_widget = EnemyWidget(Enemy(x, y, self.maze), self, speed=self.enemy_speed)
             self.non_player_object_widgets.append(enemy_widget)
             self.add_widget(enemy_widget)
 
         for i in range(0, self.num_gold):
             x,y = next(empty_cells)
-            gold_widget = GoldWidget(Gold(x, y, self.maze))
+            gold_widget = GoldWidget(Gold(x, y, self.maze), self)
             self.non_player_object_widgets.append(gold_widget)
             self.add_widget(gold_widget)
 
         for i in range(0, self.num_crystals):
             x,y = next(empty_cells)
-            crystal_widget = CrystalWidget(Crystal(x, y, self.maze))
+            crystal_widget = CrystalWidget(Crystal(x, y, self.maze), self)
             self.non_player_object_widgets.append(crystal_widget)
             self.add_widget(crystal_widget)
 
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
-        self._keyboard.bind(on_key_down=self._on_keyboard_down)
+        self._keyboard.bind(on_key_down=self._on_keyboard_down,
+                            on_key_up = self._on_keyboard_up)
 
         self.update_event = Clock.schedule_interval(self.update, 0.01)
 
@@ -169,7 +179,13 @@ class EngineWidget(Widget):
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         if keycode[1] in ['up', 'down', 'left', 'right']:
-            self.player_widget.move(keycode[1])
+            self.player_widget.direction.add(keycode[1])
+            self.player_widget.move()
+
+    def _on_keyboard_up(self, keyboard, keycode, *args):
+        if keycode[1] in ['up', 'down', 'left', 'right']:
+            self.player_widget.direction.discard(keycode[1])
+
 
     def remove_game_object(self, game_object_widget):
         self.non_player_object_widgets.remove(game_object_widget)
@@ -182,10 +198,23 @@ class EngineWidget(Widget):
 
     def update(self, *args):
         self.check_collisions()
-        self.player_widget.check_state(self)
+        self.player_widget.check_state()
         for widget in self.non_player_object_widgets:
-            widget.check_state(self)
+            widget.check_state()
 
+        self.x = 500 - self.player_widget.relative_x
+        self.y = 500 - self.player_widget.relative_y
+
+        for (line, points) in self.canvas_instructions:
+            new_points = []
+            xy_cycle = itertools.cycle([self.x, self.y])
+            for coord in points:
+                new_points.append(next(xy_cycle) + coord)
+            line.points = new_points
+
+        for widget in self.non_player_object_widgets:
+            widget.pos = (widget.relative_x + self.x,
+                          widget.relative_y + self.y)
 
     def on_game_over(self, *args):
         print("you lose")
@@ -194,63 +223,103 @@ class EngineWidget(Widget):
     def on_win(self, *args):
         print("you win")
         self.update_event.cancel()
+        
+
+
 
 class GameObjectWidget(Widget):
-    def __init__(self, game_object, **kwargs):
+    relative_x = NumericProperty(None)
+    relative_y = NumericProperty(None)
+
+    def __init__(self, game_object, engine, **kwargs):
         super(GameObjectWidget, self).__init__(**kwargs)
         self.game_object = game_object
-        self.pos = (20*self.game_object.x+10, 20*self.game_object.y+10)
+        self.relative_x = 20*self.game_object.x+10
+        self.relative_y = 20*self.game_object.y+10
+        self.engine = engine
+        self.animation_queue = []
 
-    def check_state(self, engine):
+    def check_state(self):
         if self.game_object.marked_for_removal:
-            engine.remove_game_object(self)
+            self.engine.remove_game_object(self)
+
 
 class MovingGameObjectWidget(GameObjectWidget):
-    def __init__(self, game_object, speed=11, **kwargs):
-        super(MovingGameObjectWidget, self).__init__(game_object, **kwargs)
+    def __init__(self, game_object, engine, speed=10, **kwargs):
+        super(MovingGameObjectWidget, self).__init__(game_object, engine, **kwargs)
         self.step_time = 0.6 - 0.05 * speed
+        self.animating = False
+        self.animation_queue = []
+        
+
+    def add_animation(self):
+        animation = Animation(relative_x = 20 * self.game_object.x + 10,
+                              relative_y = 20 * self.game_object.y + 10,
+                              d = self.step_time)
+
+        animation.bind(on_complete=self.on_animation_complete)
+        self.animation_queue.append(animation)
+        self.animate()
 
     def animate(self):
-        animation = Animation(x = 20 * self.game_object.x + 10,
-                              y = 20 * self.game_object.y + 10,
-                              d = self.step_time)
-        animation.start(self)
+        #pdb.set_trace()
+        if (not self.animating) and len(self.animation_queue) > 0:
+            animation = self.animation_queue.pop(0)
+            self.animating = True
+            animation.start(self)
 
     def move(self, *args):
-        self.game_object.move(*args)
-        self.animate()    
+        moved = self.game_object.move(*args)
+        if moved:
+            self.add_animation()
+
+    def on_animation_complete(self, *args):
+        self.animating = False
+        self.animate()
+
+
 
 
 class PlayerWidget(MovingGameObjectWidget):
-    def __init__(self, player, **kwargs):
-        super(PlayerWidget, self).__init__(player, **kwargs)
+    def __init__(self, player, engine, **kwargs):
+        super(PlayerWidget, self).__init__(player, engine, **kwargs)
         self.has_crystal = False
+        self.pos = (500, 500)
+        self.direction = set()
+        self.move_event = Clock.schedule_interval(self.move, 0.01)
 
-    def check_state(self, engine):
+    def check_state(self):
         if self.game_object.marked_for_removal:
-            engine.dispatch('on_game_over')
-        if self.game_object.gold >= engine.num_gold:
-            engine.dispatch('on_win')
+            self.engine.dispatch('on_game_over')
+        if self.game_object.gold >= self.engine.num_gold:
+            self.engine.dispatch('on_win')
         if self.game_object.has_crystal != self.has_crystal:
             self.has_crystal = self.game_object.has_crystal
             color = (0, 1, 1) if self.has_crystal else (0, 1, 0)
             self.canvas.get_group("color")[0].rgb = color
-            
+
+    def move(self, *args):
+        if not self.animating and self.direction:
+            for direction in self.direction:
+                super(PlayerWidget, self).move(direction)
 
 
 
 class EnemyWidget(MovingGameObjectWidget):
-    def __init__(self, enemy, speed=11, **kwargs):
-        super(EnemyWidget, self).__init__(enemy, speed=speed, **kwargs)
+    def __init__(self, enemy, engine, speed=11, **kwargs):
+        super(EnemyWidget, self).__init__(enemy, engine, speed=speed, **kwargs)
         self.move_event = Clock.schedule_interval(self.move, self.step_time)
+        
 
-    def check_state(self, engine):
-        super(EnemyWidget, self).check_state(engine)
+    def check_state(self):
+        super(EnemyWidget, self).check_state()
         if self.game_object.marked_for_removal:
             self.move_event.cancel()
 
+
 class GoldWidget(GameObjectWidget):
     pass
+
 
 class CrystalWidget(GameObjectWidget):
     pass
