@@ -3,6 +3,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.slider import Slider
 from kivy.uix.button import Button
 from kivy.uix.label import Label
@@ -16,9 +17,9 @@ import itertools
 import pdb
 
 
-class GameWidget(BoxLayout):
+class GameWidget(AnchorLayout):
     def __init__(self, **kwargs):
-        super(GameWidget, self).__init__(**kwargs)
+        super(GameWidget, self).__init__(anchor_y='top', **kwargs)
         self.settings = {'maze_width': 12,
                          'maze_height': 12,
                          'num_enemies': 5,
@@ -31,8 +32,14 @@ class GameWidget(BoxLayout):
         engine = EngineWidget(self.settings)
         engine.bind(on_game_over=self.load_game_over_screen)
         engine.bind(on_win=self.load_win_screen)
+        status_bar = StatusBarWidget()
+        engine.bind(score=status_bar.update_score)
+        status_bar.update_score(engine)
         self.clear_widgets()
-        self.add_widget(engine)
+        self.add_widget(status_bar, 0, )
+        self.add_widget(engine, 1)
+        
+        
 
     def load_game_over_screen(self, engine, *args):
         self.clear_widgets()
@@ -58,6 +65,17 @@ class GameWidget(BoxLayout):
         settings_screen_widget = SettingsScreenWidget(self.settings)
         settings_screen_widget.return_btn.bind(on_release=self.load_welcome_screen)
         self.add_widget(settings_screen_widget)
+
+class StatusBarWidget(BoxLayout):
+    score_label = ObjectProperty(None)
+    time_label = ObjectProperty(None)
+
+    def __init(**kwargs):
+        super(StatusBarWidget, self).__init__(orientation='horizontal', **kwargs)
+    
+    def update_score(self, engine, *args):
+        #pdb.set_trace()
+        self.score_label.text = "Gold: {}/{}".format(str(engine.score), str(engine.num_gold))
         
 
 class GameOverWidget(Widget):
@@ -118,6 +136,8 @@ class SettingWidget(BoxLayout):
 
 
 class EngineWidget(Widget):
+    score = NumericProperty(0)
+
     def __init__(self, settings, **kwargs):
         super(EngineWidget, self).__init__(**kwargs)
         self.register_event_type('on_game_over')
@@ -134,7 +154,7 @@ class EngineWidget(Widget):
 
 
         self.maze_widget = MazeWidget(self.maze, self.cell_width)
-        self.add_widget(self.maze_widget)
+        self.add_widget(self.maze_widget, 1)
 
 
         empty_cells = itertools.cycle(self.maze.get_empty_cells())
@@ -142,7 +162,7 @@ class EngineWidget(Widget):
         x,y = next(empty_cells)
         player = Player(x, y, self.maze)
         self.player_widget = PlayerWidget(player, self)
-        self.add_widget(self.player_widget)
+        self.add_widget(self.player_widget, 2)
         self.on_resize()
         self.bind(size=self.on_resize)
 
@@ -152,25 +172,26 @@ class EngineWidget(Widget):
             x,y = next(empty_cells)
             enemy_widget = EnemyWidget(Enemy(x, y, self.maze), self, speed=self.enemy_speed)
             self.non_player_object_widgets.append(enemy_widget)
-            self.add_widget(enemy_widget)
+            self.add_widget(enemy_widget, 3)
 
         for i in range(0, self.num_gold):
             x,y = next(empty_cells)
             gold_widget = GoldWidget(Gold(x, y, self.maze), self)
             self.non_player_object_widgets.append(gold_widget)
-            self.add_widget(gold_widget)
+            self.add_widget(gold_widget, 4)
 
         for i in range(0, self.num_crystals):
             x,y = next(empty_cells)
             crystal_widget = CrystalWidget(Crystal(x, y, self.maze), self)
             self.non_player_object_widgets.append(crystal_widget)
-            self.add_widget(crystal_widget)
+            self.add_widget(crystal_widget, 5)
 
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down,
                             on_key_up = self._on_keyboard_up)
 
         self.update_event = Clock.schedule_interval(self.update, 0.01)
+
 
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
@@ -209,7 +230,10 @@ class EngineWidget(Widget):
         self.player_widget.check_state()
         for widget in self.non_player_object_widgets:
             widget.check_state()
-        #pdb.set_trace()
+
+    def update_time(self, *args):
+        pass
+
 
     def on_game_over(self, *args):
         print("you lose")
@@ -229,6 +253,7 @@ class MazeWidget(Widget):
         self.maze = maze
         self.canvas_instructions = []
         with self.canvas:
+                Color(rgb=(1,1,1,1))
                 for segment in self.maze.get_wall_segments():
                     x1, y1, x2, y2 = tuple((val + 0.5) * cell_width
                         for val in segment)
@@ -301,8 +326,8 @@ class PlayerWidget(MovingGameObjectWidget):
     def __init__(self, player, engine, **kwargs):
         super(PlayerWidget, self).__init__(player, engine, **kwargs)
         self.has_crystal = False
+        self.gold = -1
         self.direction = set()
-        #self.pos = (250, 250)
         self.move_event = Clock.schedule_interval(self.move, 0.01)
 
     def check_state(self):
@@ -314,6 +339,8 @@ class PlayerWidget(MovingGameObjectWidget):
             self.has_crystal = self.game_object.has_crystal
             color = (0, 1, 1) if self.has_crystal else (0, 1, 0)
             self.canvas.get_group("color")[0].rgb = color
+        if self.engine.score != self.game_object.gold:
+            self.engine.score = self.game_object.gold
 
     def move(self, *args):
         if not self.animating and self.direction:

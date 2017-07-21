@@ -1,5 +1,24 @@
 #:kivy 1.0.9
 
+<StatusBarWidget>:
+    score_label: score_label
+    time_label: time_label
+    size_hint_y: None
+    height: 40
+    canvas:
+        Color:
+            rgb: (0, 0, 0, 1)
+        Rectangle:
+            size: root.size
+            pos: self.pos
+    Label:
+        id: score_label
+        font_size: 20
+        halign: 'center'
+    Label:
+        id: time_label
+        font_size: 20
+        halign: 'center'
 
 <PlayerWidget>:
     size: 10, 10
