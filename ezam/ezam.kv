@@ -97,6 +97,22 @@
         font_size: 20
         text:"OK"
 
+<SettingsScreenWidget>:
+    settings_box: settings_box
+    Label:
+        text: "Settings"
+        font_size: 40
+        center_x: root.width / 2
+        top: root.height - 50
+    BoxLayout:
+        id: settings_box
+        orientation: 'vertical'
+        width: root.width
+        center_x: root.width / 2
+        center_y: root.height / 2 - 250
+        spacing: 20
+        padding: (30, 50)
+
 <SettingWidget>:
     slider: slider
     val_label: val_label

@@ -1,6 +1,7 @@
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.slider import Slider
 from kivy.uix.button import Button
@@ -54,9 +55,9 @@ class GameWidget(BoxLayout):
 
     def load_settings_screen(self, *args):
         self.clear_widgets()
-        setting_screen_widget = SettingScreenWidget(self.settings)
-        setting_screen_widget.return_btn.bind(on_release=self.load_welcome_screen)
-        self.add_widget(setting_screen_widget)
+        settings_screen_widget = SettingsScreenWidget(self.settings)
+        settings_screen_widget.return_btn.bind(on_release=self.load_welcome_screen)
+        self.add_widget(settings_screen_widget)
         
 
 class GameOverWidget(Widget):
@@ -71,26 +72,26 @@ class WinWidget(Widget):
     return_btn = ObjectProperty(None)
 
 
-class SettingScreenWidget(BoxLayout):
+class SettingsScreenWidget(Widget):
     return_btn = ObjectProperty(None)
+    settings_box = ObjectProperty(None)
 
     def __init__(self, settings,**kwargs):
-        super(SettingScreenWidget,self).__init__(orientation='vertical', spacing=20, padding = (30, 50), **kwargs)
-        self.add_widget(Label(text='Settings', font_size = 40, size_hint = (None, None), pos_hint = {'center_x':0.5}))
-        self.add_widget(SettingWidget('maze_width', 'maze width:',
+        super(SettingsScreenWidget,self).__init__(**kwargs)
+        self.settings_box.add_widget(SettingWidget('maze_width', 'maze width:',
                                       5, 50, settings['maze_width'], settings))
-        self.add_widget(SettingWidget('maze_height', 'maze height:',
+        self.settings_box.add_widget(SettingWidget('maze_height', 'maze height:',
                                       5, 50, settings['maze_height'], settings))
-        self.add_widget(SettingWidget('num_enemies', 'number of enemies:',
+        self.settings_box.add_widget(SettingWidget('num_enemies', 'number of enemies:',
                                       0, 50, settings['num_enemies'], settings))
-        self.add_widget(SettingWidget('num_gold', 'number of gold coins:',
+        self.settings_box.add_widget(SettingWidget('num_gold', 'number of gold coins:',
                                       0, 50, settings['num_gold'], settings))
-        self.add_widget(SettingWidget('num_crystals', 'number of crystals:',
+        self.settings_box.add_widget(SettingWidget('num_crystals', 'number of crystals:',
                                       0, 50, settings['num_crystals'], settings))
-        self.add_widget(SettingWidget('enemy_speed', 'enemy speed:',
+        self.settings_box.add_widget(SettingWidget('enemy_speed', 'enemy speed:',
                                       1, 10, settings['enemy_speed'], settings))
         self.return_btn = Button(text="Done", size=(170,40), size_hint=(None, None), pos_hint = {'center_x':0.5})
-        self.add_widget(self.return_btn)
+        self.settings_box.add_widget(self.return_btn)
 
 
 class SettingWidget(BoxLayout):
