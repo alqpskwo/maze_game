@@ -13,6 +13,8 @@ from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty, NumericProperty
 from maze import Maze, Player, Enemy, Gold, Crystal
+import time
+import datetime
 import itertools
 import pdb
 
@@ -32,8 +34,9 @@ class GameWidget(AnchorLayout):
         engine = EngineWidget(self.settings)
         engine.bind(on_game_over=self.load_game_over_screen)
         engine.bind(on_win=self.load_win_screen)
-        status_bar = StatusBarWidget()
+        status_bar = StatusBarWidget(engine.start_time)
         engine.bind(score=status_bar.update_score)
+        Clock.schedule_interval(status_bar.update_time, 0.01)
         status_bar.update_score(engine)
         self.clear_widgets()
         self.add_widget(status_bar, 0, )
@@ -42,6 +45,7 @@ class GameWidget(AnchorLayout):
         
 
     def load_game_over_screen(self, engine, *args):
+        
         self.clear_widgets()
         game_over_widget = GameOverWidget()
         game_over_widget.return_btn.bind(on_release=self.load_welcome_screen)
@@ -55,8 +59,10 @@ class GameWidget(AnchorLayout):
         self.add_widget(welcome_widget)
 
     def load_win_screen(self, engine, *args):
+        total_s = int(time.time() - engine.start_time)
+        total_time = str(datetime.timedelta(seconds=total_s))
         self.clear_widgets()
-        win_widget = WinWidget()
+        win_widget = WinWidget(total_time)
         win_widget.return_btn.bind(on_release=self.load_welcome_screen)
         self.add_widget(win_widget)
 
@@ -70,16 +76,22 @@ class StatusBarWidget(BoxLayout):
     score_label = ObjectProperty(None)
     time_label = ObjectProperty(None)
 
-    def __init(**kwargs):
+    def __init__(self, start_time, **kwargs):
         super(StatusBarWidget, self).__init__(orientation='horizontal', **kwargs)
+        self.start_time = start_time
     
     def update_score(self, engine, *args):
         #pdb.set_trace()
         self.score_label.text = "Gold: {}/{}".format(str(engine.score), str(engine.num_gold))
+
+    def update_time(self, *args):
+        s = int(time.time() - self.start_time)
+        self.time_label.text = str(datetime.timedelta(seconds=s))
         
 
 class GameOverWidget(Widget):
     return_btn = ObjectProperty(None)
+
 
 
 class WelcomeWidget(Widget):
@@ -88,6 +100,10 @@ class WelcomeWidget(Widget):
 
 class WinWidget(Widget):
     return_btn = ObjectProperty(None)
+    time_label = ObjectProperty(None)
+    def __init__(self, total_time, **kwargs):
+        super(WinWidget, self).__init__(**kwargs)
+        self.time_label.text = "You completed the maze in {}".format(total_time)
 
 
 class SettingsScreenWidget(Widget):
@@ -147,7 +163,7 @@ class EngineWidget(Widget):
         self.num_gold = settings['num_gold']
         self.num_crystals = settings['num_crystals']
         self.enemy_speed = settings['enemy_speed']
-        self.canvas_instructions = []
+        self.start_time = time.time()
 
         self.maze = Maze(2*settings['maze_width'] + 1, 2*settings['maze_height'] + 1)
         self.maze.generate()
@@ -231,8 +247,6 @@ class EngineWidget(Widget):
         for widget in self.non_player_object_widgets:
             widget.check_state()
 
-    def update_time(self, *args):
-        pass
 
 
     def on_game_over(self, *args):
