@@ -197,13 +197,9 @@ class EngineWidget(Widget):
                 widget.game_object.collide(self.player_widget.game_object)
 
     def update(self, *args):
-        self.check_collisions()
-        self.player_widget.check_state()
-        for widget in self.non_player_object_widgets:
-            widget.check_state()
-
-        self.x = 500 - self.player_widget.relative_x
-        self.y = 500 - self.player_widget.relative_y
+        
+        self.x = self.player_widget.x - self.player_widget.relative_x
+        self.y = self.player_widget.y - self.player_widget.relative_y
 
         for (line, points) in self.canvas_instructions:
             new_points = []
@@ -215,6 +211,11 @@ class EngineWidget(Widget):
         for widget in self.non_player_object_widgets:
             widget.pos = (widget.relative_x + self.x,
                           widget.relative_y + self.y)
+
+        self.check_collisions()
+        self.player_widget.check_state()
+        for widget in self.non_player_object_widgets:
+            widget.check_state()
 
     def on_game_over(self, *args):
         print("you lose")
@@ -262,7 +263,6 @@ class MovingGameObjectWidget(GameObjectWidget):
         self.animate()
 
     def animate(self):
-        #pdb.set_trace()
         if (not self.animating) and len(self.animation_queue) > 0:
             animation = self.animation_queue.pop(0)
             self.animating = True
@@ -284,8 +284,8 @@ class PlayerWidget(MovingGameObjectWidget):
     def __init__(self, player, engine, **kwargs):
         super(PlayerWidget, self).__init__(player, engine, **kwargs)
         self.has_crystal = False
-        self.pos = (500, 500)
         self.direction = set()
+        self.pos = (250, 250)
         self.move_event = Clock.schedule_interval(self.move, 0.01)
 
     def check_state(self):
