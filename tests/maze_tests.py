@@ -1,11 +1,11 @@
 from nose.tools import assert_raises
-from maze_game import maze
+from ezam import maze
 
 def test_validation():
 	width_min = maze.Maze.WIDTH_MIN
-	width_max = maze.Maze.WIDTH_MAX
+	width_max = 101
 	height_min = maze.Maze.HEIGHT_MIN
-	height_max = maze.Maze.HEIGHT_MAX
+	height_max = 101
 
 	maze.Maze(width_min, height_min)
 	maze.Maze(width_min, height_max)
@@ -27,17 +27,13 @@ def test_validation():
 	assert_raises(ValueError, maze.Maze, width_even, height_even)
 
 	assert_raises(ValueError, maze.Maze, width_min - 1, height_min)
-	assert_raises(ValueError, maze.Maze, width_max + 1, height_min)
 	assert_raises(ValueError, maze.Maze, width_min - 10, height_min)
-	assert_raises(ValueError, maze.Maze, width_max + 16, height_min)
 
 	assert_raises(ValueError, maze.Maze, width_min, height_min - 1)
 	assert_raises(ValueError, maze.Maze, width_min, height_min - 20)
-	assert_raises(ValueError, maze.Maze, width_min, height_max + 1)
-	assert_raises(ValueError, maze.Maze, width_min, height_max + 8)
 
 def test_walls():
-	m = maze.Maze(maze.Maze.WIDTH_MAX, maze.Maze.HEIGHT_MAX)
+	m = maze.Maze(101, 101)
 	assert m.cells[0][0]
 	assert m.cells[0][1]
 	assert m.cells[1][0]
